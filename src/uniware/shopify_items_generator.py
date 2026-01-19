@@ -213,7 +213,8 @@ if __name__ == "__main__":
         sys.exit(1)
     
     input_file = sys.argv[1]
-    output_dir = "/Users/vasukhanna/Desktop/inching-india/inventory-management-scripts/generated_output"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, "generated_output")
     
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)

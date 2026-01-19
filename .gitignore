@@ -1,4 +1,5 @@
-inventory-management-scripts/generated_output/
+src/**/generated_output/
+tst/**/generated_output/
 *.pyc
 __pycache__/
 .DS_Store

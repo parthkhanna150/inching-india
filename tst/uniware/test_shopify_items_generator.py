@@ -2,6 +2,8 @@ import unittest
 import csv
 import os
 import tempfile
+import sys
+sys.path.append('../../src/uniware')
 from shopify_items_generator import parse_product_name, generate_items
 
 class TestShopifyItemsGenerator(unittest.TestCase):
