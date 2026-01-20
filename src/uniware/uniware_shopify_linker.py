@@ -1,12 +1,13 @@
 import csv
 import sys
 import os
-sys.path.append('../common')
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'common'))
 from uniware_utils import sanitize_sku, generate_bundle_variant, parse_product_name
 
 def generate_channel_item_type(shopify_file, output_file):
     channel_items = []
     errors = []
+    skipped_channels = {}
     
     with open(shopify_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -18,6 +19,11 @@ def generate_channel_item_type(shopify_file, output_file):
                 channel_name = row['channelName']
                 seller_sku = row.get('Seller SKU on Channel', '') or channel_product_id
                 
+                # Only process SHOPIFY channel products
+                if channel_name.upper() != 'SHOPIFY':
+                    skipped_channels[channel_name] = skipped_channels.get(channel_name, 0) + 1
+                    continue
+                
                 if not product_name or not channel_product_id or not channel_name:
                     errors.append(f"Row {row_num}: Missing required fields")
                     continue
@@ -25,6 +31,16 @@ def generate_channel_item_type(shopify_file, output_file):
                 components = parse_product_name(product_name)
                 if not components:
                     errors.append(f"Row {row_num}: No components found in '{product_name}'")
+                    continue
+                
+                # Check if there are any physical components (skip if only non-physical accessories)
+                physical_components = [
+                    (comp_type, comp_value) for comp_type, comp_value in components
+                    if not (comp_type == 'WITH_ACCESSORY' and comp_value == 'FALSE')
+                ]
+                
+                if not physical_components:
+                    errors.append(f"Row {row_num}: No physical components found in '{product_name}' - skipping")
                     continue
                 
                 if '-' not in channel_product_id:
@@ -61,6 +77,12 @@ def generate_channel_item_type(shopify_file, output_file):
             except Exception as e:
                 errors.append(f"Row {row_num}: Error processing '{row.get('Product Name on Channel', 'N/A')}' - {str(e)}")
                 continue
+    
+    # Print skipped channels summary
+    if skipped_channels:
+        print(f"Skipped {sum(skipped_channels.values())} products from other channels:")
+        for channel, count in sorted(skipped_channels.items()):
+            print(f"  {channel}: {count} products")
     
     if errors:
         print(f"Encountered {len(errors)} errors:")

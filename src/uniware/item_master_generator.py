@@ -1,13 +1,14 @@
 import csv
 import sys
 import os
-sys.path.append('../common')
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'common'))
 from uniware_utils import sanitize_sku, generate_bundle_variant, parse_product_name
 
 def generate_items(input_file, simple_output, bundle_output, combined_output=None):
     simple_items = []
     bundle_items = []
     errors = []
+    skipped_channels = {}
     
     with open(input_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -16,6 +17,12 @@ def generate_items(input_file, simple_output, bundle_output, combined_output=Non
             try:
                 product_name = row['Product Name on Channel']
                 channel_product_id = row['Channel Product Id']
+                channel_name = row.get('channelName', '')
+                
+                # Only process SHOPIFY channel products
+                if channel_name.upper() != 'SHOPIFY':
+                    skipped_channels[channel_name] = skipped_channels.get(channel_name, 0) + 1
+                    continue
                 
                 if not product_name or not channel_product_id:
                     errors.append(f"Row {row_num}: Missing product name or channel product id")
@@ -166,6 +173,12 @@ def generate_items(input_file, simple_output, bundle_output, combined_output=Non
             except Exception as e:
                 errors.append(f"Row {row_num}: Error processing '{row.get('Product Name on Channel', 'N/A')}' - {str(e)}")
                 continue
+    
+    # Print skipped channels summary
+    if skipped_channels:
+        print(f"Skipped {sum(skipped_channels.values())} products from other channels:")
+        for channel, count in sorted(skipped_channels.items()):
+            print(f"  {channel}: {count} products")
     
     # Print errors if any
     if errors:

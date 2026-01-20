@@ -10,33 +10,43 @@ from uniware_utils import parse_product_name, sanitize_sku
 
 class TestShopifyItemsGenerator(unittest.TestCase):
     
+    def _log_test(self, test_name, input_data, expected, actual, description=""):
+        """Helper method to log test input and assertions"""
+        print(f"\n=== {test_name} ===")
+        if isinstance(input_data, str):
+            print(f"INPUT: '{input_data}'")
+        else:
+            print(f"INPUT: {input_data}")
+        print(f"EXPECTED: {expected}")
+        print(f"ACTUAL: {actual}")
+        if description:
+            print(f"✅ {description}")
+    
+    def _assert_equal_with_log(self, actual, expected, test_name, input_data, description=""):
+        """Helper to assert equality with logging"""
+        self._log_test(test_name, input_data, expected, actual, description)
+        self.assertEqual(actual, expected)
+    
     def test_parse_product_name(self):
-        # Test basic parsing
-        result = parse_product_name("Aafreen Wine Velvet Suit - XL / S / With Potli")
-        expected = [('TOP', 'XL'), ('BOTTOM', 'S'), ('WITH_ACCESSORY', 'TRUE')]
-        self.assertEqual(result, expected)
+        test_cases = [
+            ("Aafreen Wine Velvet Suit - XL / S / With Potli", [('TOP', 'XL'), ('BOTTOM', 'S'), ('WITH_ACCESSORY', 'TRUE')], "Basic parsing with accessory"),
+            ("Aafreen Kaani Set - XXS / XS", [('TOP', 'XXS'), ('BOTTOM', 'XS')], "Parsing without accessory"),
+            ("Simple Kurta - XL", [('TOP', 'XL')], "Single variant parsing"),
+            ("Simple Product", [('TOP', 'Simple Product')], "Single product without variants")
+        ]
         
-        # Test without potli
-        result = parse_product_name("Aafreen Kaani Set - XXS / XS")
-        expected = [('TOP', 'XXS'), ('BOTTOM', 'XS')]
-        self.assertEqual(result, expected)
-        
-        # Test only top size
-        result = parse_product_name("Simple Kurta - XL")
-        expected = [('TOP', 'XL')]
-        self.assertEqual(result, expected)
-        
-        # Test no hyphen
-        result = parse_product_name("Simple Product")
-        self.assertEqual(result, [])
+        for input_str, expected, description in test_cases:
+            with self.subTest(input_str=input_str):
+                result = parse_product_name(input_str)
+                self._assert_equal_with_log(result, expected, "PARSE PRODUCT NAME TEST", input_str, description)
     
     def test_generate_items(self):
         # Create temporary input file
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as input_file:
             writer = csv.writer(input_file)
-            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id'])
-            writer.writerow(['', 'Aafreen Wine Velvet Suit - XL / S / With Potli', '9084349907162-47107397746906'])
-            writer.writerow(['', 'Aafreen Kaani Set - XXS / XS', '9084349907162-47107397779674'])
+            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id', 'channelName'])
+            writer.writerow(['', 'Aafreen Wine Velvet Suit - XL / S / With Potli', '9084349907162-47107397746906', 'SHOPIFY'])
+            writer.writerow(['', 'Aafreen Kaani Set - XXS / XS', '9084349907162-47107397779674', 'SHOPIFY'])
             input_file_path = input_file.name
         
         # Create temporary output files
@@ -98,83 +108,61 @@ class TestShopifyItemsGenerator(unittest.TestCase):
     
     def test_variant_truncation(self):
         """Test that variants are truncated to 4 characters max"""
-        # Test case 1: Long variant names
-        product_name = "Anarkali Set - KURTA / PALAZZO / WITH EMBROIDERED DUPATTA"
-        components = parse_product_name(product_name)
-        
-        print(f"\n=== VARIANT TRUNCATION TEST ===")
-        print(f"Input: {product_name}")
-        print(f"Parsed components: {components}")
-        
-        expected_components = [
-            ('TOP', 'KURTA'),
-            ('BOTTOM', 'PALAZZO'),
-            ('WITH_ACCESSORY', 'TRUE')
+        test_cases = [
+            ("Anarkali Set - KURTA / PALAZZO / WITH EMBROIDERED DUPATTA", 
+             [('TOP', 'KURTA'), ('BOTTOM', 'PALAZZO'), ('WITH_ACCESSORY', 'TRUE')], 
+             "Long variant names with accessory"),
+            ("Green Velvet Suit - XXXL / XXL / WITH EMBROIDERED DUPATTA", 
+             [('TOP', 'XXXL'), ('BOTTOM', 'XXL'), ('WITH_ACCESSORY', 'TRUE')], 
+             "Production example with accessory")
         ]
-        self.assertEqual(components, expected_components)
         
-        # Test case 2: Real example from production
-        product_name2 = "Green Velvet Suit - XXXL / XXL / WITH EMBROIDERED DUPATTA"
-        components2 = parse_product_name(product_name2)
-        
-        print(f"Input: {product_name2}")
-        print(f"Parsed components: {components2}")
-        
-        expected_components2 = [
-            ('TOP', 'XXXL'),
-            ('BOTTOM', 'XXL'),
-            ('WITH_ACCESSORY', 'TRUE')
-        ]
-        self.assertEqual(components2, expected_components2)
+        for input_str, expected, description in test_cases:
+            with self.subTest(input_str=input_str):
+                result = parse_product_name(input_str)
+                self._assert_equal_with_log(result, expected, "VARIANT TRUNCATION TEST", input_str, description)
     
     def test_sanitize_sku(self):
         """Test SKU sanitization removes invalid characters"""
         test_cases = [
-            ("ABC123_TOP_KURTA", "ABC123_TOP_KURTA"),
-            ("ABC123_TOP_KURTA WITH SPACE", "ABC123_TOP_KURTA_WITH_SPACE"),
-            ("ABC123@#$%", "ABC123____"),
-            ("ABC-123.456/789_TEST", "ABC-123.456/789_TEST"),
-            ("40559697690812_TOP_₹1,000.00", "40559697690812_TOP__1_000.00")  # Currency symbol and comma
+            ("ABC123_TOP_KURTA", "ABC123_TOP_KURTA", "No change needed"),
+            ("ABC123_TOP_KURTA WITH SPACE", "ABC123_TOP_KURTA_WITH_SPACE", "Spaces replaced with underscores"),
+            ("ABC123@#$%", "ABC123____", "Special characters replaced"),
+            ("ABC-123.456/789_TEST", "ABC-123.456/789_TEST", "Allowed characters preserved"),
+            ("40559697690812_TOP_₹1,000.00", "40559697690812_TOP__1_000.00", "Currency symbols sanitized")
         ]
         
-        print(f"\n=== SKU SANITIZATION TEST ===")
-        for input_sku, expected in test_cases:
+        for input_sku, expected, description in test_cases:
             with self.subTest(input_sku=input_sku):
                 result = sanitize_sku(input_sku)
-                print(f"Input: {input_sku} -> Output: {result}")
-                self.assertEqual(result, expected)
+                self._assert_equal_with_log(result, expected, "SKU SANITIZATION TEST", input_sku, description)
     
     def test_sku_length_limit(self):
         """Test that bundle SKU stays under 45 characters"""
-        product_code_base = "12345678901234"
-        bundle_variant = "KURT_PALA_WITH"
-        bundle_sku = f"{product_code_base}_{bundle_variant}"
+        test_cases = [
+            ("12345678901234", "KURT_PALA_WITH", 29, "Standard variant length"),
+            ("12345678901234", "XXXL_XXL_WITH", 28, "Production example length")
+        ]
         
-        print(f"\n=== SKU LENGTH TEST ===")
-        print(f"Bundle SKU: {bundle_sku} (length: {len(bundle_sku)})")
-        
-        self.assertLessEqual(len(bundle_sku), 45)
-        self.assertEqual(bundle_sku, "12345678901234_KURT_PALA_WITH")
-        self.assertEqual(len(bundle_sku), 29)
-        
-        # Test production example
-        bundle_variant2 = "XXXL_XXL_WITH"
-        bundle_sku2 = f"{product_code_base}_{bundle_variant2}"
-        
-        print(f"Bundle SKU: {bundle_sku2} (length: {len(bundle_sku2)})")
-        
-        self.assertLessEqual(len(bundle_sku2), 45)
-        self.assertEqual(bundle_sku2, "12345678901234_XXXL_XXL_WITH")
-        self.assertEqual(len(bundle_sku2), 28)
+        for base, variant, expected_length, description in test_cases:
+            with self.subTest(variant=variant):
+                bundle_sku = f"{base}_{variant}"
+                input_data = f"Base='{base}', Variant='{variant}'"
+                expected = f"Length <= 45 (actual: {expected_length})"
+                actual = f"Length: {len(bundle_sku)}"
+                
+                self._log_test("SKU LENGTH TEST", input_data, expected, actual, description)
+                self.assertLessEqual(len(bundle_sku), 45)
+                self.assertEqual(len(bundle_sku), expected_length)
     
     def test_bundle_sku_generation(self):
         """Test bundle SKU generation with variant truncation"""
         # Create temporary input file with test cases
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as input_file:
             writer = csv.writer(input_file)
-            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id'])
-            writer.writerow(['', 'Anarkali Set - KURTA / PALAZZO / WITH EMBROIDERED DUPATTA', 'SHOP-12345678901234'])
-            writer.writerow(['', 'Green Velvet Suit - XXXL / XXL / WITH EMBROIDERED DUPATTA', 'SHOP-98765432109876'])
+            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id', 'channelName'])
+            writer.writerow(['', 'Anarkali Set - KURTA / PALAZZO / WITH EMBROIDERED DUPATTA', 'SHOP-12345678901234', 'SHOPIFY'])
+            writer.writerow(['', 'Green Velvet Suit - XXXL / XXL / WITH EMBROIDERED DUPATTA', 'SHOP-98765432109876', 'SHOPIFY'])
             input_file_path = input_file.name
         
         # Create temporary output files
@@ -223,8 +211,8 @@ class TestShopifyItemsGenerator(unittest.TestCase):
         # Create temporary input file with WITHOUT accessory
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as input_file:
             writer = csv.writer(input_file)
-            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id'])
-            writer.writerow(['', 'Test Set - KURTA / PALAZZO / WITHOUT DUPATTA', 'SHOP-12345678901234'])
+            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id', 'channelName'])
+            writer.writerow(['', 'Test Set - KURTA / PALAZZO / WITHOUT DUPATTA', 'SHOP-12345678901234', 'SHOPIFY'])
             input_file_path = input_file.name
         
         # Create temporary output files
@@ -272,6 +260,78 @@ class TestShopifyItemsGenerator(unittest.TestCase):
             self.assertEqual(len(bundle_items), 2)
             component_codes = [item['Component Product Code'] for item in bundle_items]
             self.assertEqual(set(component_codes), set(expected_codes))
+            
+        finally:
+            # Clean up
+            os.unlink(input_file_path)
+            if os.path.exists(simple_output):
+                os.unlink(simple_output)
+            if os.path.exists(bundle_output):
+                os.unlink(bundle_output)
+    
+    def test_channel_filtering(self):
+        """Test that only SHOPIFY channel products are processed"""
+        # Create temporary input file with mixed channels
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as input_file:
+            writer = csv.writer(input_file)
+            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id', 'channelName'])
+            writer.writerow(['', 'SHOPIFY Product - KURTA / PALAZZO', 'SHOP-12345', 'SHOPIFY'])
+            writer.writerow(['', 'AMAZON Product - TOP / BOTTOM', 'AMZN-67890', 'AMAZON'])
+            writer.writerow(['', 'MYNTRA Product - XL', 'MYNT-11111', 'MYNTRA'])
+            writer.writerow(['', 'SHOPIFY Product 2 - S', 'SHOP-22222', 'SHOPIFY'])
+            input_file_path = input_file.name
+        
+        # Create temporary output files
+        simple_output = tempfile.mktemp(suffix='.csv')
+        bundle_output = tempfile.mktemp(suffix='.csv')
+        
+        try:
+            print("\n=== CHANNEL FILTERING TEST ===")
+            print("INPUT DATA:")
+            print("  SHOPIFY Product - KURTA / PALAZZO (SHOP-12345) [SHOPIFY]")
+            print("  AMAZON Product - TOP / BOTTOM (AMZN-67890) [AMAZON]")
+            print("  MYNTRA Product - XL (MYNT-11111) [MYNTRA]")
+            print("  SHOPIFY Product 2 - S (SHOP-22222) [SHOPIFY]")
+            print()
+            
+            # Generate items
+            generate_items(input_file_path, simple_output, bundle_output)
+            
+            # Verify only SHOPIFY products were processed
+            with open(simple_output, 'r') as f:
+                reader = csv.DictReader(f)
+                simple_items = list(reader)
+            
+            print("GENERATED SIMPLE ITEMS:")
+            for item in simple_items:
+                print(f"  {item['Product Code*']}")
+            print()
+            
+            # Should only have SHOPIFY products (2 products = 3 SIMPLE items)
+            # SHOP-12345: KURTA + PALAZZO = 2 items
+            # SHOP-22222: S = 1 item  
+            print("ASSERTIONS:")
+            print(f"  Expected 3 SIMPLE items, got {len(simple_items)}")
+            self.assertEqual(len(simple_items), 3)
+            print("  ✅ Correct number of SIMPLE items generated")
+            
+            # Verify product codes contain only SHOPIFY product bases
+            shopify_bases = ['12345', '22222']
+            print(f"  Expected SHOPIFY bases: {shopify_bases}")
+            for item in simple_items:
+                product_code = item['Product Code*']
+                has_shopify_base = any(base in product_code for base in shopify_bases)
+                self.assertTrue(has_shopify_base, f"Product code {product_code} should contain SHOPIFY base")
+            print("  ✅ All items contain SHOPIFY product bases")
+            
+            # Verify no AMAZON or MYNTRA products
+            excluded_bases = ['67890', '11111']
+            print(f"  Expected excluded bases: {excluded_bases}")
+            for item in simple_items:
+                product_code = item['Product Code*']
+                self.assertNotIn('67890', product_code, "Should not contain AMAZON product")
+                self.assertNotIn('11111', product_code, "Should not contain MYNTRA product")
+            print("  ✅ No AMAZON or MYNTRA products in output")
             
         finally:
             # Clean up

@@ -20,7 +20,8 @@ def generate_bundle_variant(components):
 def parse_product_name(product_name):
     """Extract components from product name after hyphen"""
     if ' - ' not in product_name:
-        return []
+        # Single product with no variants - treat as single TOP component
+        return [('TOP', product_name)]
     
     parts = product_name.split(' - ', 1)[1].split(' / ')
     components = []
