@@ -1,31 +1,10 @@
 import csv
-import re
 import sys
 import os
+sys.path.append('../common')
+from uniware_utils import sanitize_sku, generate_bundle_variant, parse_product_name
 
-def parse_product_name(product_name):
-    """Extract components from product name after hyphen"""
-    if ' - ' not in product_name:
-        return []
-    
-    parts = product_name.split(' - ', 1)[1].split(' / ')
-    components = []
-    
-    for part in parts:
-        part = part.strip()
-        if part.upper() in ['WITH POTLI', 'WITHOUT POTLI']:
-            potli_value = 'TRUE' if 'WITH' in part.upper() else 'FALSE'
-            components.append(('WITH_POTLI', potli_value))
-        else:
-            # First size is always TOP, second is BOTTOM (if exists)
-            if not any(comp[0] == 'TOP' for comp in components):
-                components.append(('TOP', part))
-            else:
-                components.append(('BOTTOM', part))
-    
-    return components
-
-def generate_items(input_file, simple_output, bundle_output):
+def generate_items(input_file, simple_output, bundle_output, combined_output=None):
     simple_items = []
     bundle_items = []
     errors = []
@@ -58,19 +37,16 @@ def generate_items(input_file, simple_output, bundle_output):
                 product_code_base = channel_product_id.split('-')[1]
                 
                 # Create variant string for bundle
-                variant_parts = []
-                for comp_type, comp_value in components:
-                    if comp_type in ['TOP', 'BOTTOM']:
-                        variant_parts.append(comp_value)
-                    else:  # WITH_POTLI
-                        variant_parts.append('WITH_POTLI' if comp_value == 'TRUE' else 'WITHOUT_POTLI')
+                bundle_variant = generate_bundle_variant(components)
+                bundle_product_code = sanitize_sku(f"{product_code_base}_{bundle_variant}")
                 
-                bundle_variant = '_'.join(variant_parts)
-                bundle_product_code = f"{product_code_base}_{bundle_variant}"
-                
-                # Create SIMPLE items
+                # Create SIMPLE items (only for physical items)
                 for comp_type, comp_value in components:
-                    simple_product_code = f"{product_code_base}_{comp_type.replace(' ', '_')}_{comp_value}"
+                    # Skip creating SIMPLE items for accessories that are NOT included
+                    if comp_type == 'WITH_ACCESSORY' and comp_value == 'FALSE':
+                        continue
+                        
+                    simple_product_code = sanitize_sku(f"{product_code_base}_{comp_type.replace(' ', '_')}_{comp_value.replace(' ', '_')}")
                     simple_name = f"{base_name} - {comp_type.title()} {comp_value}"
                     simple_description = f"{base_name.upper().replace(' ', '_')}_{comp_type}_{comp_value}"
                     
@@ -91,7 +67,7 @@ def generate_items(input_file, simple_output, bundle_output):
                         'brand': '',
                         'size': comp_value if comp_type in ['TOP', 'BOTTOM'] else '',
                         'Requires Customization': 'False',
-                        'Min Order Size': '1',
+                        'Min Order Size': '',
                         'Tax Type Code': '',
                         'GST Tax Type Code': '',
                         'HSN Code': '',
@@ -104,7 +80,7 @@ def generate_items(input_file, simple_output, bundle_output):
                         'MRP': '1000.0',
                         'Base Price': '1000.0',
                         'Enabled': 'True',
-                        'Resync Inventory': 'False',
+                        'Resync Inventory': '',
                         'Type': 'SIMPLE',
                         'Scan Type': '',
                         'Component Product Code': '',
@@ -113,7 +89,7 @@ def generate_items(input_file, simple_output, bundle_output):
                         'Batch Group Code': '',
                         'Dispatch Expiry Tolerance': '',
                         'Shelf Life': '',
-                        'Tax Calculation Type': 'PRICE_OF_COMPONENT_SKU',
+                        'Tax Calculation Type': '',
                         'Expirable': 'False',
                         'Determine Expiry From': 'From Category',
                         'grn Expiry Tolerance': '',
@@ -125,12 +101,16 @@ def generate_items(input_file, simple_output, bundle_output):
                     }
                     simple_items.append(simple_item)
                 
-                # Create BUNDLE item entries (one per component)
+                # Create BUNDLE item entries (only for physical components)
                 bundle_name = f"Bundle {product_name}"
                 bundle_description = "BUNDLE"
                 
                 for comp_type, comp_value in components:
-                    component_product_code = f"{product_code_base}_{comp_type.replace(' ', '_')}_{comp_value}"
+                    # Skip creating bundle components for accessories that are NOT included
+                    if comp_type == 'WITH_ACCESSORY' and comp_value == 'FALSE':
+                        continue
+                        
+                    component_product_code = sanitize_sku(f"{product_code_base}_{comp_type.replace(' ', '_')}_{comp_value.replace(' ', '_')}")
                     
                     bundle_item = {
                         'Category Code*': 'Clothing',
@@ -149,7 +129,7 @@ def generate_items(input_file, simple_output, bundle_output):
                         'brand': '',
                         'size': '',
                         'Requires Customization': 'False',
-                        'Min Order Size': '1',
+                        'Min Order Size': '',
                         'Tax Type Code': '',
                         'GST Tax Type Code': '',
                         'HSN Code': '',
@@ -162,9 +142,9 @@ def generate_items(input_file, simple_output, bundle_output):
                         'MRP': '',
                         'Base Price': '',
                         'Enabled': 'True',
-                        'Resync Inventory': 'False',
+                        'Resync Inventory': '',
                         'Type': 'BUNDLE',
-                        'Scan Type': '',
+                        'Scan Type': 'SIMPLE',
                         'Component Product Code': component_product_code,
                         'Component Quantity': '1',
                         'Component Price': '1000.0',
@@ -206,10 +186,18 @@ def generate_items(input_file, simple_output, bundle_output):
             writer = csv.DictWriter(f, fieldnames=bundle_items[0].keys())
             writer.writeheader()
             writer.writerows(bundle_items)
+    
+    # Write COMBINED items
+    if combined_output and (simple_items or bundle_items):
+        all_items = simple_items + bundle_items
+        with open(combined_output, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=all_items[0].keys())
+            writer.writeheader()
+            writer.writerows(all_items)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python shopify_items_generator.py <shopify_products_file>")
+        print("Usage: python item_master_generator.py <shopify_products_file>")
         sys.exit(1)
     
     input_file = sys.argv[1]
@@ -221,6 +209,7 @@ if __name__ == "__main__":
     
     simple_output = os.path.join(output_dir, "generated_simple_items.csv")
     bundle_output = os.path.join(output_dir, "generated_bundle_items.csv")
+    combined_output = os.path.join(output_dir, "populated_item_master.csv")
     
-    generate_items(input_file, simple_output, bundle_output)
-    print(f"Generated {simple_output} and {bundle_output}")
+    generate_items(input_file, simple_output, bundle_output, combined_output)
+    print(f"Generated {simple_output}, {bundle_output}, and {combined_output}")
