@@ -340,6 +340,94 @@ class TestShopifyItemsGenerator(unittest.TestCase):
                 os.unlink(simple_output)
             if os.path.exists(bundle_output):
                 os.unlink(bundle_output)
+    
+    def test_item_ordering(self):
+        """Test that SIMPLE items come before BUNDLE items in combined output"""
+        # Create temporary input file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as input_file:
+            writer = csv.writer(input_file)
+            writer.writerow(['Channel Product Image', 'Product Name on Channel', 'Channel Product Id', 'channelName'])
+            writer.writerow(['', 'Test Product 1 - KURTA / PALAZZO', 'SHOP-11111', 'SHOPIFY'])
+            writer.writerow(['', 'Test Product 2 - XL / S / WITH DUPATTA', 'SHOP-22222', 'SHOPIFY'])
+            input_file_path = input_file.name
+        
+        # Create temporary output files
+        simple_output = tempfile.mktemp(suffix='.csv')
+        bundle_output = tempfile.mktemp(suffix='.csv')
+        combined_output = tempfile.mktemp(suffix='.csv')
+        
+        try:
+            print("\n=== ITEM ORDERING TEST ===")
+            print("INPUT DATA:")
+            print("  Test Product 1 - KURTA / PALAZZO (SHOP-11111)")
+            print("  Test Product 2 - XL / S / WITH DUPATTA (SHOP-22222)")
+            print()
+            
+            # Generate items with combined output
+            generate_items(input_file_path, simple_output, bundle_output, combined_output)
+            
+            # Read combined output and check ordering
+            with open(combined_output, 'r') as f:
+                reader = csv.DictReader(f)
+                items = list(reader)
+            
+            # Analyze item types and their positions
+            simple_items = []
+            bundle_items = []
+            
+            for i, item in enumerate(items):
+                if item['Type'] == 'SIMPLE':
+                    simple_items.append(i)
+                elif item['Type'] == 'BUNDLE':
+                    bundle_items.append(i)
+            
+            print("ANALYSIS:")
+            print(f"  Total items: {len(items)}")
+            print(f"  SIMPLE items: {len(simple_items)} (positions: {simple_items[:3]}...{simple_items[-3:] if len(simple_items) > 3 else simple_items})")
+            print(f"  BUNDLE items: {len(bundle_items)} (positions: {bundle_items[:3]}...{bundle_items[-3:] if len(bundle_items) > 3 else bundle_items})")
+            print()
+            
+            print("ASSERTIONS:")
+            # Check that we have both types
+            self.assertGreater(len(simple_items), 0, "Should have SIMPLE items")
+            self.assertGreater(len(bundle_items), 0, "Should have BUNDLE items")
+            print("  ✅ Both SIMPLE and BUNDLE items exist")
+            
+            # Check that all SIMPLE items come before all BUNDLE items
+            last_simple_pos = max(simple_items)
+            first_bundle_pos = min(bundle_items)
+            
+            print(f"  Last SIMPLE item at position: {last_simple_pos}")
+            print(f"  First BUNDLE item at position: {first_bundle_pos}")
+            
+            self.assertLess(last_simple_pos, first_bundle_pos, "All SIMPLE items should come before BUNDLE items")
+            print("  ✅ All SIMPLE items come before BUNDLE items")
+            
+            # Verify no mixing within each section
+            simple_positions = set(simple_items)
+            bundle_positions = set(bundle_items)
+            
+            # Check for gaps in SIMPLE section
+            simple_range = set(range(min(simple_items), max(simple_items) + 1))
+            simple_gaps = simple_range - simple_positions
+            
+            # Check for gaps in BUNDLE section  
+            bundle_range = set(range(min(bundle_items), max(bundle_items) + 1))
+            bundle_gaps = bundle_range - bundle_positions
+            
+            self.assertEqual(len(simple_gaps), 0, f"SIMPLE section should be contiguous, found gaps at: {simple_gaps}")
+            self.assertEqual(len(bundle_gaps), 0, f"BUNDLE section should be contiguous, found gaps at: {bundle_gaps}")
+            print("  ✅ Both sections are contiguous (no mixing)")
+            
+        finally:
+            # Clean up
+            os.unlink(input_file_path)
+            if os.path.exists(simple_output):
+                os.unlink(simple_output)
+            if os.path.exists(bundle_output):
+                os.unlink(bundle_output)
+            if os.path.exists(combined_output):
+                os.unlink(combined_output)
 
 if __name__ == '__main__':
     unittest.main()
