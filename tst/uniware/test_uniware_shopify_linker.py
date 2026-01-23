@@ -61,19 +61,19 @@ class TestChannelItemTypeGenerator(unittest.TestCase):
             
             # Check first item (with potli)
             first_item = items[0]
-            self.assertEqual(first_item['Uniware SKU Code'], '47107397746906_XL_S_WITH')
+            self.assertEqual(first_item['Uniware SKU Code'], 'BDL_47107397746906_XL_S_WITH')
             
             # Check second item (with dupatta)
             second_item = items[1]
-            self.assertEqual(second_item['Uniware SKU Code'], '47107397746907_L_PANT_WITH')
+            self.assertEqual(second_item['Uniware SKU Code'], 'BDL_47107397746907_L_PANT_WITH')
             
             # Check third item (without potli)
             third_item = items[2]
-            self.assertEqual(third_item['Uniware SKU Code'], '47107397746908_M_L_WITHOUT')
+            self.assertEqual(third_item['Uniware SKU Code'], 'BDL_47107397746908_M_L_WITHOUT')
             
             # Check fourth item (no accessory variant)
             fourth_item = items[3]
-            self.assertEqual(fourth_item['Uniware SKU Code'], '47107397779674_XXS_XS')
+            self.assertEqual(fourth_item['Uniware SKU Code'], 'BDL_47107397779674_XXS_XS')
             
         finally:
             # Clean up

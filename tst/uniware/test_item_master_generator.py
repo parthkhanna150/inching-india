@@ -68,16 +68,18 @@ class TestShopifyItemsGenerator(unittest.TestCase):
             
             self.assertEqual(len(simple_items), 5)  # 3 + 2 components
             
-            # Assert specific product codes
-            expected_simple_codes = [
-                '47107397746906_TOP_XL',
-                '47107397746906_BOTTOM_S', 
-                '47107397746906_WITH_ACCESSORY_TRUE',
-                '47107397779674_TOP_XXS',
-                '47107397779674_BOTTOM_XS'
-            ]
+            # Assert specific product codes - check for SIMPLE_ prefix and correct naming
             actual_codes = [item['Product Code*'] for item in simple_items]
-            self.assertEqual(set(actual_codes), set(expected_simple_codes))
+            
+            # Verify all codes start with SIMPLE_
+            for code in actual_codes:
+                self.assertTrue(code.startswith('SIMPLE_'), f"Code should start with SIMPLE_: {code}")
+            
+            # Verify we have the expected component types
+            expected_components = ['TOP_XL', 'BOTTOM_S', 'WITH_ACCESSORY_TRUE', 'TOP_XXS', 'BOTTOM_XS']
+            for expected_component in expected_components:
+                found = any(expected_component in code for code in actual_codes)
+                self.assertTrue(found, f"Should have component {expected_component}")
             
             # Verify bundle items
             with open(bundle_output, 'r') as f:
@@ -90,12 +92,17 @@ class TestShopifyItemsGenerator(unittest.TestCase):
             
             self.assertEqual(len(bundle_items), 5)  # 3 + 2 components
             
-            # Assert bundle product codes
+            # Assert bundle product codes - check for BDL_ prefix
             expected_bundle_codes = [
-                '47107397746906_XL_S_WITH',
-                '47107397779674_XXS_XS'
+                'BDL_47107397746906_XL_S_WITH',
+                'BDL_47107397779674_XXS_XS'
             ]
             actual_bundle_codes = list(set(item['Product Code*'] for item in bundle_items))
+            
+            # Verify BDL_ prefix
+            for code in actual_bundle_codes:
+                self.assertTrue(code.startswith('BDL_'), f"Bundle code should start with BDL_: {code}")
+            
             self.assertEqual(set(actual_bundle_codes), set(expected_bundle_codes))
             
         finally:
@@ -185,11 +192,15 @@ class TestShopifyItemsGenerator(unittest.TestCase):
             # Extract unique bundle product codes
             bundle_codes = list(set(item['Product Code*'] for item in bundle_items))
             
-            # Verify expected bundle SKUs
+            # Verify expected bundle SKUs - check for BDL_ prefix
             expected_bundles = [
-                '12345678901234_KURT_PALA_WITH',  # KURTA->KURT, PALAZZO->PALA
-                '98765432109876_XXXL_XXL_WITH'    # XXXL, XXL unchanged
+                'BDL_12345678901234_KURT_PALA_WITH',  # KURTA->KURT, PALAZZO->PALA
+                'BDL_98765432109876_XXXL_XXL_WITH'    # XXXL, XXL unchanged
             ]
+            
+            # Check BDL_ prefix
+            for code in bundle_codes:
+                self.assertTrue(code.startswith('BDL_'), f"Bundle code should start with BDL_: {code}")
             
             self.assertEqual(set(bundle_codes), set(expected_bundles))
             
@@ -235,13 +246,18 @@ class TestShopifyItemsGenerator(unittest.TestCase):
             # Should create only 2 SIMPLE items: TOP and BOTTOM (no WITH_ACCESSORY_FALSE)
             self.assertEqual(len(simple_items), 2)
             
-            # Verify specific codes
-            expected_codes = [
-                '12345678901234_TOP_KURTA',
-                '12345678901234_BOTTOM_PALAZZO'
-            ]
+            # Verify specific codes - check for SIMPLE_ prefix
             actual_codes = [item['Product Code*'] for item in simple_items]
-            self.assertEqual(set(actual_codes), set(expected_codes))
+            
+            # Verify all codes start with SIMPLE_
+            for code in actual_codes:
+                self.assertTrue(code.startswith('SIMPLE_'), f"Code should start with SIMPLE_: {code}")
+            
+            # Verify we have the expected component types (TOP and BOTTOM only, no WITH_ACCESSORY_FALSE)
+            expected_components = ['TOP_KURTA', 'BOTTOM_PALAZZO']
+            for expected_component in expected_components:
+                found = any(expected_component in code for code in actual_codes)
+                self.assertTrue(found, f"Should have component {expected_component}")
             
             # Verify bundle uses "WITHOUT" in variant but only references physical components
             with open(bundle_output, 'r') as f:
@@ -253,13 +269,27 @@ class TestShopifyItemsGenerator(unittest.TestCase):
                 print(f"  Bundle: {item['Product Code*']} -> Component: {item['Component Product Code']}")
             
             bundle_codes = list(set(item['Product Code*'] for item in bundle_items))
-            expected_bundle = '12345678901234_KURT_PALA_WITHOUT'
+            expected_bundle = 'BDL_12345678901234_KURT_PALA_WITHOUT'
+            
+            # Verify BDL_ prefix
+            for code in bundle_codes:
+                self.assertTrue(code.startswith('BDL_'), f"Bundle code should start with BDL_: {code}")
+            
             self.assertEqual(bundle_codes, [expected_bundle])
             
             # Verify bundle only references physical components (2 components, not 3)
             self.assertEqual(len(bundle_items), 2)
             component_codes = [item['Component Product Code'] for item in bundle_items]
-            self.assertEqual(set(component_codes), set(expected_codes))
+            
+            # Verify components are SIMPLE_ format
+            for code in component_codes:
+                self.assertTrue(code.startswith('SIMPLE_'), f"Component should start with SIMPLE_: {code}")
+            
+            # Verify we have expected component types
+            expected_component_types = ['TOP_KURTA', 'BOTTOM_PALAZZO']
+            for expected_type in expected_component_types:
+                found = any(expected_type in code for code in component_codes)
+                self.assertTrue(found, f"Should have component type {expected_type}")
             
         finally:
             # Clean up
@@ -315,14 +345,18 @@ class TestShopifyItemsGenerator(unittest.TestCase):
             self.assertEqual(len(simple_items), 3)
             print("  ✅ Correct number of SIMPLE items generated")
             
-            # Verify product codes contain only SHOPIFY product bases
-            shopify_bases = ['12345', '22222']
-            print(f"  Expected SHOPIFY bases: {shopify_bases}")
+            # Verify product codes use new SIMPLE_ format
             for item in simple_items:
                 product_code = item['Product Code*']
-                has_shopify_base = any(base in product_code for base in shopify_bases)
-                self.assertTrue(has_shopify_base, f"Product code {product_code} should contain SHOPIFY base")
-            print("  ✅ All items contain SHOPIFY product bases")
+                self.assertTrue(product_code.startswith('SIMPLE_'), f"Product code should start with SIMPLE_: {product_code}")
+            print("  ✅ All items use SIMPLE_ format")
+            
+            # Verify we have expected component types from SHOPIFY products
+            expected_components = ['TOP_KURTA', 'BOTTOM_PALAZZO', 'TOP_S']
+            for expected_component in expected_components:
+                found = any(expected_component in item['Product Code*'] for item in simple_items)
+                self.assertTrue(found, f"Should have component {expected_component}")
+            print("  ✅ All expected components found")
             
             # Verify no AMAZON or MYNTRA products
             excluded_bases = ['67890', '11111']
@@ -428,6 +462,97 @@ class TestShopifyItemsGenerator(unittest.TestCase):
                 os.unlink(bundle_output)
             if os.path.exists(combined_output):
                 os.unlink(combined_output)
+
+    def test_bundle_prefix(self):
+        """Test that BUNDLE items have BDL_ prefix"""
+        
+        test_data = [
+            {
+                'Product Name on Channel': 'Brown Kaani Set - XXS',
+                'Channel Product Id': '5804626968725-43484251783386',
+                'channelName': 'SHOPIFY'
+            }
+        ]
+        
+        # Create temporary input file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as input_file:
+            writer = csv.DictWriter(input_file, fieldnames=test_data[0].keys())
+            writer.writeheader()
+            writer.writerows(test_data)
+            input_path = input_file.name
+        
+        # Create temporary output files
+        simple_output = tempfile.mktemp(suffix='.csv')
+        bundle_output = tempfile.mktemp(suffix='.csv')
+        
+        try:
+            # Run the generator
+            generate_items(input_path, simple_output, bundle_output)
+            
+            # Read the BUNDLE items output
+            with open(bundle_output, 'r') as f:
+                reader = csv.DictReader(f)
+                bundle_items = list(reader)
+            
+            # Check that all BUNDLE items have BDL_ prefix
+            for item in bundle_items:
+                self.assertTrue(item['Product Code*'].startswith('BDL_'), 
+                               f"Bundle SKU should start with BDL_: {item['Product Code*']}")
+            
+        finally:
+            # Clean up temporary files
+            os.unlink(input_path)
+            if os.path.exists(simple_output):
+                os.unlink(simple_output)
+            if os.path.exists(bundle_output):
+                os.unlink(bundle_output)
+
+    def test_bundle_prefix_new(self):
+        """Test that BUNDLE items have BDL_ prefix in new format"""
+        
+        test_data = [
+            {
+                'Product Name on Channel': 'Test Bundle Set - XXS',
+                'Channel Product Id': '5804626968725-43484251783386',
+                'channelName': 'SHOPIFY'
+            }
+        ]
+        
+        # Create temporary input file
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as input_file:
+            writer = csv.DictWriter(input_file, fieldnames=test_data[0].keys())
+            writer.writeheader()
+            writer.writerows(test_data)
+            input_path = input_file.name
+        
+        # Create temporary output files
+        simple_output = tempfile.mktemp(suffix='.csv')
+        bundle_output = tempfile.mktemp(suffix='.csv')
+        
+        try:
+            # Run the generator
+            generate_items(input_path, simple_output, bundle_output)
+            
+            # Read the BUNDLE items output
+            with open(bundle_output, 'r') as f:
+                reader = csv.DictReader(f)
+                bundle_items = list(reader)
+            
+            # Check that all BUNDLE items have BDL_ prefix
+            bundle_codes = [item['Product Code*'] for item in bundle_items]
+            for code in bundle_codes:
+                self.assertTrue(code.startswith('BDL_'), 
+                               f"Bundle SKU should start with BDL_: {code}")
+            
+            print(f"✅ All {len(bundle_codes)} BUNDLE items have BDL_ prefix")
+            
+        finally:
+            # Clean up temporary files
+            os.unlink(input_path)
+            if os.path.exists(simple_output):
+                os.unlink(simple_output)
+            if os.path.exists(bundle_output):
+                os.unlink(bundle_output)
 
 if __name__ == '__main__':
     unittest.main()

@@ -51,7 +51,7 @@ def generate_channel_item_type(shopify_file, output_file):
                 
                 # Create bundle variant for Uniware SKU
                 bundle_variant = generate_bundle_variant(components)
-                uniware_sku = sanitize_sku(f"{product_code_base}_{bundle_variant}")
+                uniware_sku = sanitize_sku(f"BDL_{product_code_base}_{bundle_variant}")
                 
                 channel_item = {
                     'Channel Name*': channel_name,

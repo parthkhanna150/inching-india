@@ -9,6 +9,7 @@ def generate_items(input_file, simple_output, bundle_output, combined_output=Non
     bundle_items = []
     errors = []
     skipped_channels = {}
+    simple_items_dict = {}  # Track unique SIMPLE items by name
     
     with open(input_file, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -45,7 +46,7 @@ def generate_items(input_file, simple_output, bundle_output, combined_output=Non
                 
                 # Create variant string for bundle
                 bundle_variant = generate_bundle_variant(components)
-                bundle_product_code = sanitize_sku(f"{product_code_base}_{bundle_variant}")
+                bundle_product_code = sanitize_sku(f"BDL_{product_code_base}_{bundle_variant}")
                 
                 # Create SIMPLE items (only for physical items)
                 for comp_type, comp_value in components:
@@ -53,60 +54,67 @@ def generate_items(input_file, simple_output, bundle_output, combined_output=Non
                     if comp_type == 'WITH_ACCESSORY' and comp_value == 'FALSE':
                         continue
                         
-                    simple_product_code = sanitize_sku(f"{product_code_base}_{comp_type.replace(' ', '_')}_{comp_value.replace(' ', '_')}")
                     simple_name = f"{base_name} - {comp_type.title()} {comp_value}"
-                    simple_description = f"{base_name.upper().replace(' ', '_')}_{comp_type}_{comp_value}"
                     
-                    simple_item = {
-                        'Category Code*': 'Clothing',
-                        'Product Code*': simple_product_code,
-                        'Name*': simple_name,
-                        'Description': simple_description,
-                        'Scan Identifier': simple_product_code,
-                        'Length (mm)': '1',
-                        'Width (mm)': '1',
-                        'height (mm)': '1',
-                        'Weight (gms)': '1000.0',
-                        'ean': '',
-                        'upc': '',
-                        'isbn': '',
-                        'color': '',
-                        'brand': '',
-                        'size': comp_value if comp_type in ['TOP', 'BOTTOM'] else '',
-                        'Requires Customization': 'False',
-                        'Min Order Size': '',
-                        'Tax Type Code': '',
-                        'GST Tax Type Code': '',
-                        'HSN Code': '',
-                        'Tags': '',
-                        'TAT': '',
-                        'Image Url': '',
-                        'Product Page URL': '',
-                        'Item Detail Fields': '',
-                        'Cost Price': '800.0',
-                        'MRP': '1000.0',
-                        'Base Price': '1000.0',
-                        'Enabled': 'True',
-                        'Resync Inventory': '',
-                        'Type': 'SIMPLE',
-                        'Scan Type': '',
-                        'Component Product Code': '',
-                        'Component Quantity': '',
-                        'Component Price': '',
-                        'Batch Group Code': '',
-                        'Dispatch Expiry Tolerance': '',
-                        'Shelf Life': '',
-                        'Tax Calculation Type': '',
-                        'Expirable': 'False',
-                        'Determine Expiry From': 'From Category',
-                        'grn Expiry Tolerance': '',
-                        'Return Expiry Tolerance': '',
-                        'Expiry Date as dd/MM/yyyy': '',
-                        'Sku Type': 'GOODS',
-                        'Fragile': 'False',
-                        'Dangerous Good': 'False'
-                    }
-                    simple_items.append(simple_item)
+                    # Check if this SIMPLE item already exists
+                    if simple_name not in simple_items_dict:
+                        # Create unique SKU for this SIMPLE item based on name hash
+                        import hashlib
+                        name_hash = hashlib.md5(simple_name.encode()).hexdigest()[:8]
+                        simple_product_code = sanitize_sku(f"SIMPLE_{name_hash}_{comp_type.replace(' ', '_')}_{comp_value.replace(' ', '_')}")
+                        simple_description = f"{base_name.upper().replace(' ', '_')}_{comp_type}_{comp_value}"
+                        
+                        simple_item = {
+                            'Category Code*': 'Clothing',
+                            'Product Code*': simple_product_code,
+                            'Name*': simple_name,
+                            'Description': simple_description,
+                            'Scan Identifier': simple_product_code,
+                            'Length (mm)': '1',
+                            'Width (mm)': '1',
+                            'height (mm)': '1',
+                            'Weight (gms)': '1000.0',
+                            'ean': '',
+                            'upc': '',
+                            'isbn': '',
+                            'color': '',
+                            'brand': '',
+                            'size': comp_value if comp_type in ['TOP', 'BOTTOM'] else '',
+                            'Requires Customization': 'False',
+                            'Min Order Size': '',
+                            'Tax Type Code': '',
+                            'GST Tax Type Code': '',
+                            'HSN Code': '',
+                            'Tags': '',
+                            'TAT': '',
+                            'Image Url': '',
+                            'Product Page URL': '',
+                            'Item Detail Fields': '',
+                            'Cost Price': '800.0',
+                            'MRP': '1000.0',
+                            'Base Price': '1000.0',
+                            'Enabled': 'True',
+                            'Resync Inventory': '',
+                            'Type': 'SIMPLE',
+                            'Scan Type': '',
+                            'Component Product Code': '',
+                            'Component Quantity': '',
+                            'Component Price': '',
+                            'Batch Group Code': '',
+                            'Dispatch Expiry Tolerance': '',
+                            'Shelf Life': '',
+                            'Tax Calculation Type': '',
+                            'Expirable': 'False',
+                            'Determine Expiry From': 'From Category',
+                            'grn Expiry Tolerance': '',
+                            'Return Expiry Tolerance': '',
+                            'Expiry Date as dd/MM/yyyy': '',
+                            'Sku Type': 'GOODS',
+                            'Fragile': 'False',
+                            'Dangerous Good': 'False'
+                        }
+                        simple_items.append(simple_item)
+                        simple_items_dict[simple_name] = simple_product_code
                 
                 # Create BUNDLE item entries (only for physical components)
                 bundle_name = f"Bundle {product_name}"
@@ -117,7 +125,8 @@ def generate_items(input_file, simple_output, bundle_output, combined_output=Non
                     if comp_type == 'WITH_ACCESSORY' and comp_value == 'FALSE':
                         continue
                         
-                    component_product_code = sanitize_sku(f"{product_code_base}_{comp_type.replace(' ', '_')}_{comp_value.replace(' ', '_')}")
+                    simple_name = f"{base_name} - {comp_type.title()} {comp_value}"
+                    component_product_code = simple_items_dict[simple_name]
                     
                     bundle_item = {
                         'Category Code*': 'Clothing',

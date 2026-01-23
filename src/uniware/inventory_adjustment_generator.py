@@ -18,7 +18,7 @@ for _, row in df.iterrows():
         'Quantity*': quantity,
         'Shelf Code*': 'DEFAULT',
         'Adjustment Type*': 'ADD',
-        'Inventory Type': 'VIRTUAL_INVENTORY',
+        'Inventory Type': 'GOOD_INVENTORY',
         'Transfer to Shelf Code': '',
         'Sla': '',
         'Source Batch Code': '',
