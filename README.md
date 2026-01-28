@@ -93,7 +93,7 @@ TODOs: Script to prepare Inventory Adjustment CSV (excel file) which is straight
 2. Add these unlinked products to our item master so we have them available in Uniware system.
   a. Go to "Unlinked" tab.
   b. Filter on "Shopify" Channel.
-  c. Download this file (called ShopifyNewProducts.csv). These are the new shopify products whose inventory we don't track.
+  c. Download this file. Rename this to ShopifyNewProducts.csv. These are the new shopify products whose inventory we don't track.
   d. Go to [item-master-generator software]() and upload this file.
   e. Click "Generate Uniware Items". Download the result (called UniwareNewItems.csv).
   f. Go to Imports. Choose "Item Master" from the first dropdown and "Create New and Update Existing" from the second dropdown. Upload the UniwareNewItems.csv.
