@@ -3,3 +3,4 @@ tst/**/generated_output/
 *.pyc
 __pycache__/
 .DS_Store
+*.html

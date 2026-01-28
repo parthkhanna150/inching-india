@@ -1,237 +1,107 @@
-# Uniware Item Generation Scripts
+# Daily Operations Standard Operating Procedure (SOP)
+*System: Uniware | Team: Mehak, Mandeep, Ilias, Simran, Prabhav*
 
-This repository contains Python scripts for generating Uniware-compatible item master data and channel linking files from Shopify product exports.
+---
 
-## Scripts Overview
+# Recurring Processes
 
-### 1. Item Master Generator (`item_master_generator.py`)
-Generates SIMPLE and BUNDLE items for Uniware item master import.
+## SOP: Operations (Mehak)
+**Role:** Orchestrating the whole process.
 
-### 2. Uniware-Shopify Linker (`uniware_shopify_linker.py`)
-Creates channel item type mappings to link Shopify products with Uniware SKUs.
+### Production Kickoff
+**Morning**
 
-## Standard Operating Procedure (SOP)
+1. **Extract Data:** Navigate to **Orders** -> **Unfulfillable**.
+2. **Export:** Download the sheet of all items currently short in inventory.
+3. **Handoff:** Send this file to **Ilias** immediately to start the tailoring queue.
 
-### Prerequisites
-- Python 3.6+
-- Shopify product export CSV file
-- Products must be from SHOPIFY channel only
+TODOs: Notes and Shopify Order number needed in this sheet.
 
-### Step-by-Step Process
+## Processing & Partial Fulfillment. (Mandeep)
+**Role:** Shipping management.
 
-1. **Export Shopify Products**
-   ```bash
-   # Ensure your CSV contains these required columns:
-   # - Product Name on Channel
-   # - Channel Product Id  
-   # - channelName
-   # - Seller SKU on Channel (optional)
-   ```
+### Fulfillments
+**Afternoon/Ongoing**
 
-2. **Generate Item Master Data**
-   ```bash
-   cd /path/to/inching-india/src/uniware
-   python3 item_master_generator.py /path/to/shopify_export.csv
-   ```
-   
-   **Outputs:**
-   - `generated_output/generated_simple_items.csv` - SIMPLE items only
-   - `generated_output/generated_bundle_items.csv` - BUNDLE items only  
-   - `generated_output/populated_item_master.csv` - Combined file (SIMPLE first, then BUNDLE)
+1. **Regular Processing:**
+   * Go to the **Shipping Panel**.
+   * Select orders that have moved to "Ready to Ship" (First-Come-First-Serve).
+   * Use the **Top-Left Dropdown** to **Create Invoices**, then **Generate Labels**.
+2. **Partial Fulfillment:**
+   * **Before Shipping Panel:** If an order is stuck in "Unfulfillable" but has some ready items, go to **Order Details** -> **Top-Left Dropdown** -> **Create Manual Shipment**. Select only the "Good" items.
 
-3. **Generate Channel Linking Data**
-   ```bash
-   python3 uniware_shopify_linker.py /path/to/shopify_export.csv
-   ```
-   
-   **Output:**
-   - `generated_output/populated_channel_item_type.csv` - Channel item mappings
+TODOs: Invoicing algorithm for price breakdown, Partial CoD adjustment for partial shipments.
 
-4. **Import to Uniware**
-   - Import `populated_item_master.csv` to Uniware Item Master
-   - Import `populated_channel_item_type.csv` to Uniware Channel Item Type
+---
 
-## Script Features
+## SOP: Production (Ilias)
+**Role:** Physical Manufacturing & Tailor Management
 
-### Core Features
-- **SKU Generation**: Creates unique, compliant SKU codes (≤45 characters)
-- **Product Parsing**: Extracts components from product names (TOP, BOTTOM, accessories)
-- **Bundle Creation**: Generates BUNDLE items that reference SIMPLE components
-- **Channel Filtering**: Only processes SHOPIFY channel products
-- **Character Sanitization**: Ensures SKU codes only contain valid characters (alphanumeric, _, -, ., /)
+### Task Allocation
+**Morning**
 
-### Advanced Features
-- **Variant Truncation**: Truncates long variants to 4 characters (KURTA→KURT, PALAZZO→PALA)
-- **Accessory Handling**: Treats any "WITH/WITHOUT" as accessories
-- **Inventory Logic**: Only creates inventory for physical items (skips "WITHOUT" accessories)
-- **Field Compliance**: Sets required empty fields per Uniware specifications
-- **Error Reporting**: Detailed error messages for problematic products
+1. **Review:** Open the Unfulfillable sheet provided by Mehak.
+2. **Assign:** Break down quantities by SKU and distribute to the **Tailors**.
 
-### Data Processing Rules
-- **SIMPLE Items**: Individual components (TOP, BOTTOM, accessories)
-- **BUNDLE Items**: Collections that reference SIMPLE items
-- **Ordering**: SIMPLE items always come before BUNDLE items in output
-- **Dependencies**: BUNDLE items only reference existing SIMPLE items
+### Production Wrap-up
+**Afternoon/Ongoing**
 
-## Guardrails & Validation
+1. **Count:** Verify total finished pieces produced during the day.
+2. **Handoff:** Send a clear list (SKU + Final Count) to **Simran**.
 
-### Input Validation
-✅ **Valid Input Requirements:**
-- CSV file with required columns
-- Products from SHOPIFY channel only
-- Channel Product Id format: `PREFIX-PRODUCTCODE`
-- Product names with proper component structure
+---
 
-❌ **Invalid Input Handling:**
-- Non-SHOPIFY channels → Skipped with logging
-- Missing required fields → Error logged, row skipped
-- Invalid product ID format → Error logged, row skipped
-- Products with zero physical components → Skipped
-- Malformed product names → Error logged, row skipped
+## SOP: Inventory Adjustment (Simran)
+**Role:** System Reconciliation (Inventory Sync)
 
-### SKU Code Guardrails
-- **Length Limit**: Maximum 45 characters
-- **Character Set**: Only alphanumeric, `_`, `-`, `.`, `/`
-- **Uniqueness**: Each SKU is unique within the output
-- **Format**: `{PRODUCTBASE}_{VARIANT}` structure
+### Inventory Adjustment
+**Twice a day - 11am and 3pm**
 
-### Business Logic Guardrails
-- **Physical Inventory Only**: No inventory items for "WITHOUT" accessories
-- **Bundle Integrity**: BUNDLE items only reference existing SIMPLE items
-- **Channel Consistency**: 100% match between channel and item master files
+1. **File Prep:** Create an Inventory Adjustment CSV based on Ilias's report.
+2. **Data Entry:**
+   * **Increment:** Set `GOOD_INVENTORY` to the produced quantity (e.g., `10`).
+   * **Decrement:** Set `VIRTUAL_INVENTORY` to the negative of that quantity (e.g., `-10`).
+3. **Upload:** Navigate to **Tools** -> **Imports** -> **Inventory Adjustment**.
+   * Select **Update Existing** and upload your file.
+   * *Note: Once uploaded, fulfillable orders will automatically move to Mehak's Shipping Panel.*
 
-## Input Format Examples
+TODOs: Script to prepare Inventory Adjustment CSV (excel file) which is straightforward to fill.
 
-### Valid Product Name Formats
+---
 
-```csv
-Product Name on Channel,Channel Product Id,channelName
-"Anarkali Set - KURTA / PALAZZO / WITH DUPATTA",SHOP-12345678901234,SHOPIFY
-"Green Velvet Suit - XXXL / XXL / WITH EMBROIDERED DUPATTA",SHOP-98765432109876,SHOPIFY
-"Simple Kurta - XL",SHOP-11111111111111,SHOPIFY
-"Standalone Product",SHOP-22222222222222,SHOPIFY
-"Test Set - KURTA / PALAZZO / WITHOUT POTLI",SHOP-33333333333333,SHOPIFY
-```
+## Daily Workflow Summary
 
-### Invalid Examples (Will be skipped/error)
+| Time | Action | Responsibility |
+| :--- | :--- | :--- |
+| **09:00 AM** | Export Unfulfillable List | Mehak |
+| **10:00 AM** | Assign tasks to Tailors | Ilias |
+| **Ongoing** | Partial/Manual Splits | Mehak |
+| **04:00 PM** | Finalize Production List | Ilias |
+| **04:30 PM** | Upload Inventory Adjustment | Simran |
+| **End of Day** | Generate Labels & Invoices | Mehak |
 
-```csv
-# Wrong channel
-"Product Name",SHOP-12345,AMAZON
+---
 
-# Missing required fields  
-"",SHOP-12345,SHOPIFY
+# One-time Processes
 
-# Invalid product ID format
-"Product Name",INVALID-FORMAT,SHOPIFY
+## SOP: Add new Product/Collection (Mehak)
+**Role:** Add new products in the system before following inventory adjustment
 
-# Only non-physical accessories
-"Product - WITHOUT DUPATTA",SHOP-12345,SHOPIFY
-```
+### Product Addition
 
-## Output Examples
+1. Create Shopify Products as normal (by duplicating from Shopify). *These products will get synced to Uniware (syncing happens every 15minutes) as UNLINKED products.*
+2. Add these unlinked products to our item master so we have them available in Uniware system.
+  a. Go to "Unlinked" tab.
+  b. Filter on "Shopify" Channel.
+  c. Download this file (called ShopifyNewProducts.csv). These are the new shopify products whose inventory we don't track.
+  d. Go to [item-master-generator software]() and upload this file.
+  e. Click "Generate Uniware Items". Download the result (called UniwareNewItems.csv).
+  f. Go to Imports. Choose "Item Master" from the first dropdown and "Create New and Update Existing" from the second dropdown. Upload the UniwareNewItems.csv.
+3. Link the newly created Uniware Items to the Shopify products so that inventory tracking can be achieved.
+  g. After the Import finishes, go to [uniware-shopify linker software]() and upload the **first file** ShopifyNewProducts.csv.
+  h. Click "Link New Products". Download the result (NewLinks.csv).
+  i. Go to Imports. Choose Channel Item Sync from the first dropdown, "Create New and Update Existing" from the second dropdown. Upload the NewLinks.csv.
+Perfect! Items have been successfully uploaded and linked for inventory tracking. **However, the inventory is zero for these so follow the Inventory Adjustment SOP now to update the quantity.**
 
-### SIMPLE Items Generated
-```csv
-Category Code*,Product Code*,Name*,Type,Tax Calculation Type,Resync Inventory,Min Order Size
-Clothing,12345678901234_TOP_KURTA,Anarkali Set - Top KURTA,SIMPLE,,,
-Clothing,12345678901234_BOTTOM_PALAZZO,Anarkali Set - Bottom PALAZZO,SIMPLE,,,
-Clothing,12345678901234_WITH_ACCESSORY_TRUE,Anarkali Set - With_Accessory TRUE,SIMPLE,,,
-```
 
-### BUNDLE Items Generated
-```csv
-Category Code*,Product Code*,Name*,Type,Scan Type,Component Product Code,Component Quantity
-Clothing,12345678901234_KURT_PALA_WITH,Bundle Anarkali Set - KURTA / PALAZZO / WITH DUPATTA,BUNDLE,SIMPLE,12345678901234_TOP_KURTA,1
-Clothing,12345678901234_KURT_PALA_WITH,Bundle Anarkali Set - KURTA / PALAZZO / WITH DUPATTA,BUNDLE,SIMPLE,12345678901234_BOTTOM_PALAZZO,1
-Clothing,12345678901234_KURT_PALA_WITH,Bundle Anarkali Set - KURTA / PALAZZO / WITH DUPATTA,BUNDLE,SIMPLE,12345678901234_WITH_ACCESSORY_TRUE,1
-```
-
-### Channel Items Generated
-```csv
-Channel Name*,Channel Product Id*,Seller SKU Code*,Uniware SKU Code
-SHOPIFY,SHOP-12345678901234,SHOP-12345678901234,12345678901234_KURT_PALA_WITH
-```
-
-## Error Handling & Logging
-
-### Console Output Examples
-```
-Skipped 150 products from other channels:
-  AMAZON: 75 products
-  MYNTRA: 50 products
-  FLIPKART: 25 products
-
-Encountered 3 errors:
-  Row 45: Missing required fields
-  Row 67: Invalid channel product id format 'INVALID-FORMAT'
-  Row 89: No physical components found in 'Product - WITHOUT DUPATTA' - skipping
-
-Generated /path/to/generated_output/populated_item_master.csv
-Generated /path/to/generated_output/populated_channel_item_type.csv
-```
-
-## Testing
-
-### Run Unit Tests
-```bash
-cd tst/uniware
-python3 test_item_master_generator.py
-python3 test_uniware_shopify_linker.py
-```
-
-### Test Coverage
-- Product name parsing (various formats)
-- SKU generation and sanitization
-- Variant truncation (4-character limit)
-- Channel filtering (SHOPIFY only)
-- Item ordering (SIMPLE before BUNDLE)
-- Accessory handling (WITH/WITHOUT logic)
-- Error handling and edge cases
-
-## File Structure
-```
-src/
-├── common/
-│   └── uniware_utils.py           # Shared utilities
-└── uniware/
-    ├── item_master_generator.py   # Main item generation
-    ├── uniware_shopify_linker.py  # Channel linking
-    └── generated_output/          # Output directory
-        ├── populated_item_master.csv
-        └── populated_channel_item_type.csv
-
-tst/
-└── uniware/
-    ├── test_item_master_generator.py
-    └── test_uniware_shopify_linker.py
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**"ModuleNotFoundError: No module named 'uniware_utils'"**
-- Ensure you're running from the correct directory
-- Scripts use absolute path resolution and should work from any directory
-
-**"No components found in product name"**
-- Check product name format: should be `"Base Name - Component1 / Component2"`
-- Single products without variants are supported
-
-**"SKU collisions or duplicate codes"**
-- Usually caused by products from non-SHOPIFY channels
-- Ensure input only contains SHOPIFY products
-
-**"Missing BUNDLE items in item master"**
-- Check if products have only "WITHOUT" accessories (zero physical components)
-- These are correctly skipped as they have no inventory to track
-
-### Performance Notes
-- Processing ~26,000 products takes ~10-15 seconds
-- Output files are typically 50MB-100MB
-- Memory usage scales linearly with input size
-
-## Version History
-- **v2.0**: Added channel filtering, enhanced SKU generation, improved test coverage
-- **v1.0**: Initial implementation with basic product parsing and item generation
+TODOs: Script to prepare product/collection (item master) CSV to upload with all bundle-simple mappings as well as uniware-shopify linkings.
