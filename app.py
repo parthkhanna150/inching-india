@@ -18,27 +18,60 @@ st.set_page_config(page_title="Inching India Operations", layout="wide")
 
 # Sidebar for process selection
 st.sidebar.title("🛍️ Inching India Operations")
-process = st.sidebar.selectbox(
-    "Select Process",
-    ["Production Kickoff", "Product Addition", "Inventory Adjustment"]
+
+# Separate daily and one-off processes
+st.sidebar.markdown("### 📅 Daily Processes")
+daily_process = st.sidebar.selectbox(
+    "Select Daily Process",
+    ["Production Kickoff", "Inventory Adjustment"]
 )
 
-if process == "Production Kickoff":
+st.sidebar.markdown("### 🔧 One-off Processes")
+oneoff_process = st.sidebar.selectbox(
+    "Select One-off Process",
+    ["Product Addition"]
+)
+
+st.sidebar.markdown("### 📖 Documentation")
+show_readme = st.sidebar.button("SOP")
+
+# Determine which process to show
+if show_readme:
+    process = "README"
+elif daily_process:
+    process = daily_process
+else:
+    process = oneoff_process
+
+if process == "README":
+    st.title("📖 Standard Operating Procedures")
+    
+    # Read and display the README.md file
+    try:
+        with open('/Users/vasukhanna/Desktop/inching-india/README.md', 'r', encoding='utf-8') as f:
+            readme_content = f.read()
+        
+        st.markdown(readme_content)
+        
+    except FileNotFoundError:
+        st.error("README.md file not found")
+    except Exception as e:
+        st.error(f"Error reading README.md: {str(e)}")
+
+elif process == "Production Kickoff":
     st.title("🚀 Production Kickoff Process")
     
     # SOP Instructions
     with st.expander("📋 SOP Instructions - Click to expand", expanded=True):
         st.markdown("""
-        ### Production Kickoff SOP (Mehak)
+        ### Production Kickoff SOP (Production Team)
         **Role:** Orchestrating the whole process
-        
-        #### When: Morning
         
         #### Steps:
         1. **Extract Data:** Navigate to **Orders** → **Unfulfillable**
         2. **Export:** Download the sheet of all items currently short in inventory
         3. **Process:** Upload the file below to generate **DailyProductionRequirements.csv**
-        4. **Handoff:** Send this file to **Ilias** immediately to start the tailoring queue
+        4. **Handoff:** Send this file to **Production Team** to start the tailoring queue
         
         **Output:** The processed file will contain:
         - SKU Code, Item Name, Notes, Date Created, Order Number, Shipping Type
@@ -102,7 +135,7 @@ elif process == "Product Addition":
     # SOP Instructions
     with st.expander("📋 SOP Instructions - Click to expand", expanded=True):
         st.markdown("""
-        ### Product Addition SOP (Mehak)
+        ### Product Addition SOP (Operations Team)
         **Role:** Add new products in the system before following inventory adjustment
         
         #### Steps:
@@ -223,21 +256,19 @@ elif process == "Inventory Adjustment":
     # SOP Instructions
     with st.expander("📋 SOP Instructions - Click to expand", expanded=True):
         st.markdown("""
-        ### Inventory Adjustment SOP (Simran)
+        ### Inventory Adjustment SOP (Production Team)
         **Role:** System Reconciliation (Inventory Sync)
-        
-        #### When: Twice a day - 11am and 3pm
         
         #### Steps:
         1. **Get Production Requirements:** Use the DailyProductionRequirements.csv file generated from the **Production Kickoff** process
         2. **File Prep:** Use **Inventory Template Generator** tab below to upload DailyProductionRequirements.csv
-        3. **Fill Quantities:** Download the template and fill in the produced quantities from Ilias's report
+        3. **Fill Quantities:** Download the template and fill in the produced quantities from production report
         4. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
         5. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
            - Select **Update Existing** and upload the generated Uniware CSV
-           - *Note: Once uploaded, fulfillable orders will automatically move to Mehak's Shipping Panel*
+           - *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
         
-        💡 **Note:** If you don't have DailyProductionRequirements.csv, ask Mehak to run the **Production Kickoff** process first.
+        💡 **Note:** If you don't have DailyProductionRequirements.csv, ask Operations Team to run the **Production Kickoff** process first.
         """)
     
     # Tabs for inventory adjustment tools
@@ -331,9 +362,7 @@ elif process == "Inventory Adjustment":
 
 # Footer
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Daily Operations Team:**")
-st.sidebar.markdown("• Mehak - Operations")
-st.sidebar.markdown("• Mandeep - Processing & Fulfillment") 
-st.sidebar.markdown("• Ilias - Production")
-st.sidebar.markdown("• Simran - Inventory Adjustment")
-st.sidebar.markdown("• Prabhav - Support")
+st.sidebar.markdown("**Team Structure:**")
+st.sidebar.markdown("• **Operations:** Mehak, Mandeep, Bharti")
+st.sidebar.markdown("• **Production:** Simran, Ilias Master Ji") 
+st.sidebar.markdown("• **Tech:** Prabhav")

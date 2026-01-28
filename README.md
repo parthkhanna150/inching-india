@@ -1,27 +1,25 @@
 # Daily Operations Standard Operating Procedure (SOP)
-*System: Uniware | Team: Mehak, Mandeep, Ilias, Simran, Prabhav*
+*System: Uniware | Operations Team: Mehak, Mandeep, Bharti | Production Team: Simran, Ilias Master Ji | Tech Team: Prabhav*
 
 ---
 
 # Recurring Processes
 
-## SOP: Operations (Mehak)
+## SOP: Production Team
 **Role:** Orchestrating the whole process.
 
 ### Production Kickoff
-**Morning**
 
 1. **Extract Data:** Navigate to **Orders** -> **Unfulfillable**.
 2. **Export:** Download the sheet of all items currently short in inventory.
-3. **Handoff:** Send this file to **Ilias** immediately to start the tailoring queue.
+3. **Handoff:** Send this file to **Production Team** immediately to start the tailoring queue.
 
 TODOs: Notes and Shopify Order number needed in this sheet.
 
-## Processing & Partial Fulfillment. (Mandeep)
+## Processing & Partial Fulfillment. (Operations Team)
 **Role:** Shipping management.
 
 ### Fulfillments
-**Afternoon/Ongoing**
 
 1. **Regular Processing:**
    * Go to the **Shipping Panel**.
@@ -34,36 +32,33 @@ TODOs: Invoicing algorithm for price breakdown, Partial CoD adjustment for parti
 
 ---
 
-## SOP: Production (Ilias)
+## SOP: Production Team (continued)
 **Role:** Physical Manufacturing & Tailor Management
 
 ### Task Allocation
-**Morning**
 
-1. **Review:** Open the Unfulfillable sheet provided by Mehak.
+1. **Review:** Open the Unfulfillable sheet provided by Operations Team.
 2. **Assign:** Break down quantities by SKU and distribute to the **Tailors**.
 
 ### Production Wrap-up
-**Afternoon/Ongoing**
 
 1. **Count:** Verify total finished pieces produced during the day.
-2. **Handoff:** Send a clear list (SKU + Final Count) to **Simran**.
+2. **Handoff:** Send a clear list (SKU + Final Count) to **Production Team** for inventory adjustment.
 
 ---
 
-## SOP: Inventory Adjustment (Simran)
+## SOP: Inventory Adjustment (Production Team)
 **Role:** System Reconciliation (Inventory Sync)
 
 ### Inventory Adjustment
-**Twice a day - 11am and 3pm**
 
-1. **File Prep:** Create an Inventory Adjustment CSV based on Ilias's report.
+1. **File Prep:** Create an Inventory Adjustment CSV based on production report.
 2. **Data Entry:**
    * **Increment:** Set `GOOD_INVENTORY` to the produced quantity (e.g., `10`).
    * **Decrement:** Set `VIRTUAL_INVENTORY` to the negative of that quantity (e.g., `-10`).
 3. **Upload:** Navigate to **Tools** -> **Imports** -> **Inventory Adjustment**.
    * Select **Update Existing** and upload your file.
-   * *Note: Once uploaded, fulfillable orders will automatically move to Mehak's Shipping Panel.*
+   * *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel.*
 
 TODOs: Script to prepare Inventory Adjustment CSV (excel file) which is straightforward to fill.
 
@@ -73,18 +68,18 @@ TODOs: Script to prepare Inventory Adjustment CSV (excel file) which is straight
 
 | Time | Action | Responsibility |
 | :--- | :--- | :--- |
-| **09:00 AM** | Export Unfulfillable List | Mehak |
-| **10:00 AM** | Assign tasks to Tailors | Ilias |
-| **Ongoing** | Partial/Manual Splits | Mehak |
-| **04:00 PM** | Finalize Production List | Ilias |
-| **04:30 PM** | Upload Inventory Adjustment | Simran |
-| **End of Day** | Generate Labels & Invoices | Mehak |
+| **Morning** | Export Unfulfillable List | Production Team |
+| **Morning** | Assign tasks to Tailors | Production Team |
+| **Ongoing** | Partial/Manual Splits | Operations Team |
+| **Afternoon** | Finalize Production List | Production Team |
+| **Afternoon** | Upload Inventory Adjustment | Production Team |
+| **End of Day** | Generate Labels & Invoices | Operations Team |
 
 ---
 
 # One-time Processes
 
-## SOP: Add new Product/Collection (Mehak)
+## SOP: Add new Product/Collection (Operations Team)
 **Role:** Add new products in the system before following inventory adjustment
 
 ### Product Addition
