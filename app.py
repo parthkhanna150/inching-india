@@ -48,7 +48,8 @@ if process == "README":
     
     # Read and display the README.md file
     try:
-        with open('/Users/vasukhanna/Desktop/inching-india/README.md', 'r', encoding='utf-8') as f:
+        readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
+        with open(readme_path, 'r', encoding='utf-8') as f:
             readme_content = f.read()
         
         st.markdown(readme_content)
