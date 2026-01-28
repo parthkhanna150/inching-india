@@ -89,11 +89,11 @@ TODOs: Script to prepare Inventory Adjustment CSV (excel file) which is straight
   a. Go to "Unlinked" tab.
   b. Filter on "Shopify" Channel.
   c. Download this file. Rename this to ShopifyNewProducts.csv. These are the new shopify products whose inventory we don't track.
-  d. Go to [item-master-generator software]() and upload this file.
+  d. Go to Product Addition from the dropdown and use item-master-generator software to upload this file.
   e. Click "Generate Uniware Items". Download the result (called UniwareNewItems.csv).
   f. Go to Imports. Choose "Item Master" from the first dropdown and "Create New and Update Existing" from the second dropdown. Upload the UniwareNewItems.csv.
 3. Link the newly created Uniware Items to the Shopify products so that inventory tracking can be achieved.
-  g. After the Import finishes, go to [uniware-shopify linker software]() and upload the **first file** ShopifyNewProducts.csv.
+  g. After the Import finishes, go to Product Addition from the dropdown and use uniware-shopify linker software to upload the **first file** ShopifyNewProducts.csv.
   h. Click "Link New Products". Download the result (NewLinks.csv).
   i. Go to Imports. Choose Channel Item Sync from the first dropdown, "Create New and Update Existing" from the second dropdown. Upload the NewLinks.csv.
 Perfect! Items have been successfully uploaded and linked for inventory tracking. **However, the inventory is zero for these so follow the Inventory Adjustment SOP now to update the quantity.**
