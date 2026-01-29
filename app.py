@@ -23,13 +23,13 @@ st.sidebar.title("🛍️ Inching India Operations")
 st.sidebar.markdown("### 📅 Daily Processes")
 daily_process = st.sidebar.selectbox(
     "Select Daily Process",
-    ["Production Kickoff", "Inventory Adjustment"]
+    ["None", "Production Kickoff", "Inventory Adjustment"]
 )
 
 st.sidebar.markdown("### 🔧 One-off Processes")
 oneoff_process = st.sidebar.selectbox(
     "Select One-off Process",
-    ["Product Addition"]
+    ["None", "Product Addition"]
 )
 
 st.sidebar.markdown("### 📖 Documentation")
@@ -38,10 +38,12 @@ show_readme = st.sidebar.button("SOP")
 # Determine which process to show
 if show_readme:
     process = "README"
-elif daily_process:
+elif daily_process != "None":
     process = daily_process
-else:
+elif oneoff_process != "None":
     process = oneoff_process
+else:
+    process = "Production Kickoff"  # Default
 
 if process == "README":
     st.title("📖 Standard Operating Procedures")
