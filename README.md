@@ -1,102 +1,109 @@
 # Daily Operations Standard Operating Procedure (SOP)
-*System: Uniware | Operations Team: Mehak, Mandeep, Bharti | Production Team: Simran, Ilias Master Ji | Tech Team: Prabhav*
+*Operations Team: Mehak, Mandeep, Bharti | Production Team: Simran, Ilias Master Ji | Tech Team: Prabhav*
 
 ---
 
-# Recurring Processes
+# Daily Workflow Overview
 
-## SOP: Production Team
-**Role:** Orchestrating the whole process.
+## Morning
+1. **Production Kickoff** - Extract unfulfillable orders and generate production requirements
+2. **Task Assignment** - Distribute work to tailors based on requirements
 
-### Production Kickoff
+## Throughout the Day
+3. **Manufacturing** - Physical production of items
+4. **Order Processing** - Process and ship ready orders as inventory becomes available
 
-1. **Extract Data:** Navigate to **Orders** -> **Unfulfillable**.
-2. **Export:** Download the sheet of all items currently short in inventory.
-3. **Handoff:** Send this file to **Production Team** immediately to start the tailoring queue.
+## Twice Daily
+5. **Inventory Updates** - Sync completed production with system inventory
 
-TODOs: Notes and Shopify Order number needed in this sheet.
-
-## Processing & Partial Fulfillment. (Operations Team)
-**Role:** Shipping management.
-
-### Fulfillments
-
-1. **Regular Processing:**
-   * Go to the **Shipping Panel**.
-   * Select orders that have moved to "Ready to Ship" (First-Come-First-Serve).
-   * Use the **Top-Left Dropdown** to **Create Invoices**, then **Generate Labels**.
-2. **Partial Fulfillment:**
-   * **Before Shipping Panel:** If an order is stuck in "Unfulfillable" but has some ready items, go to **Order Details** -> **Top-Left Dropdown** -> **Create Manual Shipment**. Select only the "Good" items.
-
-TODOs: Invoicing algorithm for price breakdown, Partial CoD adjustment for partial shipments.
+## End of Day
+6. **Final Processing** - Generate labels and invoices for remaining orders
 
 ---
 
-## SOP: Production Team (continued)
-**Role:** Physical Manufacturing & Tailor Management
+# Team-Specific SOPs
 
-### Task Allocation
+## Production Team SOP
 
-1. **Review:** Open the Unfulfillable sheet provided by Operations Team.
-2. **Assign:** Break down quantities by SKU and distribute to the **Tailors**.
+### Morning - Production Kickoff
+1. **Extract Data:** Navigate to **Orders** → **Unfulfillable**
+2. **Export:** Download the sheet of all items currently short in inventory
+3. **Process:** Use the Production Kickoff tool to generate DailyProductionRequirements.csv
+4. **Task Allocation:** Break down quantities by SKU and distribute to the **Tailors**
 
-### Production Wrap-up
+### Throughout the Day - Manufacturing
+1. **Manufacturing:** Tailors work on assigned items based on production requirements
+2. **Quality Control:** Verify finished pieces meet standards
+3. **Count:** Track completed quantities by SKU
 
-1. **Count:** Verify total finished pieces produced during the day.
-2. **Handoff:** Send a clear list (SKU + Final Count) to **Production Team** for inventory adjustment.
+### End of Day - Production Wrap-up
+1. **Count:** Verify total finished pieces produced during the day
+2. **Report:** Prepare clear list (SKU + Final Count) for inventory adjustment
 
----
-
-## SOP: Inventory Adjustment (Production Team)
-**Role:** System Reconciliation (Inventory Sync)
-
-### Inventory Adjustment
-
-1. **File Prep:** Create an Inventory Adjustment CSV based on production report.
+### Twice Daily - Inventory Adjustment
+1. **File Prep:** Use production report to create Inventory Adjustment CSV
 2. **Data Entry:**
-   * **Increment:** Set `GOOD_INVENTORY` to the produced quantity (e.g., `10`).
-   * **Decrement:** Set `VIRTUAL_INVENTORY` to the negative of that quantity (e.g., `-10`).
-3. **Upload:** Navigate to **Tools** -> **Imports** -> **Inventory Adjustment**.
-   * Select **Update Existing** and upload your file.
-   * *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel.*
-
-TODOs: Script to prepare Inventory Adjustment CSV (excel file) which is straightforward to fill.
+   * **Increment:** Set `GOOD_INVENTORY` to the produced quantity (e.g., `10`)
+   * **Decrement:** Set `VIRTUAL_INVENTORY` to the negative of that quantity (e.g., `-10`)
+3. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
+   * Select **Update Existing** and upload your file
+   * *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
 
 ---
 
-## Daily Workflow Summary
+## Operations Team SOP
 
-| Time | Action | Responsibility |
+### Throughout the Day - Order Processing & Fulfillment
+
+#### Regular Processing
+1. **Monitor:** Check the **Shipping Panel** for orders that have moved to "Ready to Ship"
+2. **Process:** Select orders (First-Come-First-Serve basis)
+3. **Invoice & Label:** Use the **Top-Left Dropdown** to **Create Invoices**, then **Generate Labels**
+
+#### Partial Fulfillment
+1. **Identify:** Orders stuck in "Unfulfillable" but have some ready items
+2. **Manual Split:** Go to **Order Details** → **Top-Left Dropdown** → **Create Manual Shipment**
+3. **Select:** Choose only the "Good" items for shipment
+
+### One-time Process - Product Addition
+
+#### Step 1: Create Shopify Products
+- Create Shopify Products as normal (by duplicating from Shopify)
+- *These products will get synced to Uniware (syncing happens every 15 minutes) as UNLINKED products*
+
+#### Step 2: Add Products to Item Master
+- Go to "Unlinked" tab in Uniware
+- Filter on "Shopify" Channel
+- Download this file and rename to **ShopifyNewProducts.csv**
+- Go to Product Addition from the dropdown and use item-master-generator software to upload this file
+- Click "Generate Uniware Items" and download the result (**UniwareNewItems.csv**)
+- Go to Imports → Choose "Item Master" → "Create New and Update Existing" → Upload UniwareNewItems.csv
+
+#### Step 3: Link Items to Shopify Products
+- After the Import finishes, go to Product Addition from the dropdown and use uniware-shopify linker software
+- Upload the **original ShopifyNewProducts.csv** file
+- Click "Link New Products" and download the result (**NewLinks.csv**)
+- Go to Imports → Choose "Channel Item Sync" → "Create New and Update Existing" → Upload NewLinks.csv
+
+#### Step 4: Update Inventory
+- Items have been successfully uploaded and linked for inventory tracking
+- **Important:** The inventory is zero for these new items
+- Follow the **Production Team's Inventory Adjustment SOP** to update quantities
+
+---
+
+# Quick Reference
+
+## Daily Timeline
+| Time | Action | Team |
 | :--- | :--- | :--- |
-| **Morning** | Export Unfulfillable List | Production Team |
-| **Morning** | Assign tasks to Tailors | Production Team |
-| **Ongoing** | Partial/Manual Splits | Operations Team |
-| **Afternoon** | Finalize Production List | Production Team |
-| **Afternoon** | Upload Inventory Adjustment | Production Team |
-| **End of Day** | Generate Labels & Invoices | Operations Team |
+| **Morning** | Extract Unfulfillable List & Assign Tasks | Production |
+| **Throughout Day** | Manufacturing & Production | Production |
+| **Ongoing** | Process Ready Orders & Partial Fulfillment | Operations |
+| **Twice Daily** | Update Inventory Adjustments | Production |
+| **End of Day** | Generate Labels & Invoices | Operations |
 
----
-
-# One-time Processes
-
-## SOP: Add new Product/Collection (Operations Team)
-**Role:** Add new products in the system before following inventory adjustment
-
-### Product Addition
-
-1. Create Shopify Products as normal (by duplicating from Shopify). *These products will get synced to Uniware (syncing happens every 15minutes) as UNLINKED products.*
-2. Add these unlinked products to our item master so we have them available in Uniware system.
-  a. Go to "Unlinked" tab.
-  b. Filter on "Shopify" Channel.
-  c. Download this file. Rename this to ShopifyNewProducts.csv. These are the new shopify products whose inventory we don't track.
-  d. Go to Product Addition from the dropdown and use item-master-generator software to upload this file.
-  e. Click "Generate Uniware Items". Download the result (called UniwareNewItems.csv).
-  f. Go to Imports. Choose "Item Master" from the first dropdown and "Create New and Update Existing" from the second dropdown. Upload the UniwareNewItems.csv.
-3. Link the newly created Uniware Items to the Shopify products so that inventory tracking can be achieved.
-  g. After the Import finishes, go to Product Addition from the dropdown and use uniware-shopify linker software to upload the **first file** ShopifyNewProducts.csv.
-  h. Click "Link New Products". Download the result (NewLinks.csv).
-  i. Go to Imports. Choose Channel Item Sync from the first dropdown, "Create New and Update Existing" from the second dropdown. Upload the NewLinks.csv.
-Perfect! Items have been successfully uploaded and linked for inventory tracking. **However, the inventory is zero for these so follow the Inventory Adjustment SOP now to update the quantity.**
-
-
-TODOs: Script to prepare product/collection (item master) CSV to upload with all bundle-simple mappings as well as uniware-shopify linkings.
+## TODOs
+- **Production:** Notes and Shopify Order number needed in unfulfillable sheet
+- **Operations:** Invoicing algorithm for price breakdown, Partial CoD adjustment for partial shipments
+- **Tech:** Script to prepare product/collection (item master) CSV to upload with all bundle-simple mappings as well as uniware-shopify linkings

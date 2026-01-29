@@ -1,7 +1,7 @@
 import csv
 import pandas as pd
 
-def generate_uniware_inventory_adjustment(input_file, output_file):
+def generate_uniware_inventory_adjustment(input_file, output_file, inventory_type="GOOD_INVENTORY", adjustment_type="ADD"):
     """
     Generate Uniware inventory adjustment CSV from filled template
     """
@@ -31,8 +31,8 @@ def generate_uniware_inventory_adjustment(input_file, output_file):
                         'Product Code*': row['SKU Code'],
                         'Quantity*': quantity,
                         'Shelf Code*': 'DEFAULT',
-                        'Adjustment Type*': 'ADD',
-                        'Inventory Type': 'GOOD_INVENTORY',
+                        'Adjustment Type*': adjustment_type,
+                        'Inventory Type': inventory_type,
                         'Transfer to Shelf Code': '',
                         'Sla': '',
                         'Source Batch Code': '',

@@ -13,37 +13,34 @@ from uniware_shopify_linker import generate_channel_item_type
 from production_kickoff import generate_production_requirements
 from inventory_adjustment_template import generate_inventory_adjustment_template
 from uniware_inventory_adjustment import generate_uniware_inventory_adjustment
+from inventory_list_template import generate_inventory_template_from_list
 
 st.set_page_config(page_title="Inching India Operations", layout="wide")
 
 # Sidebar for process selection
 st.sidebar.title("🛍️ Inching India Operations")
 
-# Separate daily and one-off processes
-st.sidebar.markdown("### 📅 Daily Processes")
-daily_process = st.sidebar.selectbox(
-    "Select Daily Process",
-    ["None", "Production Kickoff", "Inventory Adjustment"]
-)
-
-st.sidebar.markdown("### 🔧 One-off Processes")
-oneoff_process = st.sidebar.selectbox(
-    "Select One-off Process",
-    ["None", "Product Addition"]
+process = st.sidebar.selectbox(
+    "Select Process",
+    ["Production Kickoff", "Daily Inventory Update", "Product Addition", "Returns Inventory"]
 )
 
 st.sidebar.markdown("### 📖 Documentation")
-show_readme = st.sidebar.button("SOP")
+col1, col2, col3 = st.sidebar.columns(3)
+with col1:
+    main_sop = st.button("Main SOP")
+with col2:
+    prod_sop = st.button("Prod SOP")
+with col3:
+    ops_sop = st.button("Ops SOP")
 
-# Determine which process to show
-if show_readme:
+# Determine which process to show - buttons override process selection
+if main_sop:
     process = "README"
-elif daily_process != "None":
-    process = daily_process
-elif oneoff_process != "None":
-    process = oneoff_process
-else:
-    process = "Production Kickoff"  # Default
+elif prod_sop:
+    process = "Production Team SOP"
+elif ops_sop:
+    process = "Operations Team SOP"
 
 if process == "README":
     st.title("📖 Standard Operating Procedures")
@@ -60,6 +57,84 @@ if process == "README":
         st.error("README.md file not found")
     except Exception as e:
         st.error(f"Error reading README.md: {str(e)}")
+
+elif process == "Production Team SOP":
+    st.title("🏭 Production Team SOP")
+    
+    st.markdown("""
+    ## Morning - Production Kickoff
+    1. **Extract Data:** Navigate to **Orders** → **Unfulfillable**
+    2. **Export:** Download the sheet of all items currently short in inventory
+    3. **Process:** Use the Production Kickoff tool to generate DailyProductionRequirements.csv
+    4. **Task Allocation:** Break down quantities by SKU and distribute to the **Tailors**
+
+    ## Throughout the Day - Manufacturing
+    1. **Manufacturing:** Tailors work on assigned items based on production requirements
+    2. **Quality Control:** Verify finished pieces meet standards
+    3. **Count:** Track completed quantities by SKU
+
+    ## End of Day - Production Wrap-up
+    1. **Count:** Verify total finished pieces produced during the day
+    2. **Report:** Prepare clear list (SKU + Final Count) for inventory adjustment
+
+    ## Twice Daily - Inventory Adjustment
+    1. **File Prep:** Use production report to create Inventory Adjustment CSV
+    2. **Data Entry:**
+       * **Increment:** Set `GOOD_INVENTORY` to the produced quantity (e.g., `10`)
+       * **Decrement:** Set `VIRTUAL_INVENTORY` to the negative of that quantity (e.g., `-10`)
+    3. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
+       * Select **Update Existing** and upload your file
+       * *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
+
+    ## TODOs
+    - Notes and Shopify Order number needed in unfulfillable sheet
+    """)
+
+elif process == "Operations Team SOP":
+    st.title("📦 Operations Team SOP")
+    
+    st.markdown("""
+    ## Throughout the Day - Order Processing & Fulfillment
+
+    ### Regular Processing
+    1. **Monitor:** Check the **Shipping Panel** for orders that have moved to "Ready to Ship"
+    2. **Process:** Select orders (First-Come-First-Serve basis)
+    3. **Invoice & Label:** Use the **Top-Left Dropdown** to **Create Invoices**, then **Generate Labels**
+
+    ### Partial Fulfillment
+    1. **Identify:** Orders stuck in "Unfulfillable" but have some ready items
+    2. **Manual Split:** Go to **Order Details** → **Top-Left Dropdown** → **Create Manual Shipment**
+    3. **Select:** Choose only the "Good" items for shipment
+
+    ## One-time Process - Product Addition
+
+    ### Step 1: Create Shopify Products
+    - Create Shopify Products as normal (by duplicating from Shopify)
+    - *These products will get synced to Uniware (syncing happens every 15 minutes) as UNLINKED products*
+
+    ### Step 2: Add Products to Item Master
+    - Go to "Unlinked" tab in Uniware
+    - Filter on "Shopify" Channel
+    - Download this file and rename to **ShopifyNewProducts.csv**
+    - Go to Product Addition from the dropdown and use item-master-generator software to upload this file
+    - Click "Generate Uniware Items" and download the result (**UniwareNewItems.csv**)
+    - Go to Imports → Choose "Item Master" → "Create New and Update Existing" → Upload UniwareNewItems.csv
+
+    ### Step 3: Link Items to Shopify Products
+    - After the Import finishes, go to Product Addition from the dropdown and use uniware-shopify linker software
+    - Upload the **original ShopifyNewProducts.csv** file
+    - Click "Link New Products" and download the result (**NewLinks.csv**)
+    - Go to Imports → Choose "Channel Item Sync" → "Create New and Update Existing" → Upload NewLinks.csv
+
+    ### Step 4: Update Inventory
+    - Items have been successfully uploaded and linked for inventory tracking
+    - **Important:** The inventory is zero for these new items
+    - Follow the **Production Team's Inventory Adjustment SOP** to update quantities
+
+    ## TODOs
+    - Invoicing algorithm for price breakdown
+    - Partial CoD adjustment for partial shipments
+    """)
 
 elif process == "Production Kickoff":
     st.title("🚀 Production Kickoff Process")
@@ -131,6 +206,247 @@ elif process == "Production Kickoff":
             finally:
                 os.unlink(input_path)
                 os.unlink(output_file.name)
+
+elif process == "Daily Inventory Update":
+    st.title("📊 Daily Inventory Update Process")
+    
+    # SOP Instructions
+    with st.expander("📋 SOP Instructions - Click to expand", expanded=True):
+        st.markdown("""
+        ### Daily Inventory Update SOP (Production Team)
+        **Role:** System Reconciliation (Inventory Sync)
+        
+        #### Steps:
+        1. **Get Production Requirements:** Use the DailyProductionRequirements.csv file generated from the **Production Kickoff** process
+        2. **File Prep:** Use **Inventory Template Generator** tab below to upload DailyProductionRequirements.csv
+        3. **Fill Quantities:** Download the template and fill in the produced quantities from production report
+        4. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
+        5. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
+           - Select **Update Existing** and upload the generated Uniware CSV
+           - *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
+        
+        💡 **Note:** If you don't have DailyProductionRequirements.csv, ask Production Team to run the **Production Kickoff** process first.
+        """)
+    
+    # Tabs for daily inventory update tools
+    tab1, tab2 = st.tabs(["📋 Inventory Template Generator", "📤 Uniware Adjustment Generator"])
+    
+    with tab1:
+        st.header("Inventory Template Generator")
+        st.info("Upload DailyProductionRequirements.csv to generate inventory adjustment template")
+        
+        uploaded_file = st.file_uploader("Upload DailyProductionRequirements.csv", type=["csv"], key="daily_inventory_template")
+        
+        if uploaded_file:
+            st.write("### Preview of uploaded data:")
+            df = pd.read_csv(uploaded_file)
+            st.dataframe(df.head())
+            
+            if st.button("Generate Inventory Template", key="daily_generate"):
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_input:
+                    tmp_input.write(uploaded_file.getvalue())
+                    input_path = tmp_input.name
+                
+                output_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+                output_file.close()
+                
+                try:
+                    template_df, errors = generate_inventory_adjustment_template(input_path, output_file.name)
+                    
+                    if errors:
+                        st.error("Errors encountered:")
+                        for error in errors:
+                            st.write(f"❌ {error}")
+                    
+                    if template_df is not None:
+                        st.success("✅ Inventory template generated successfully!")
+                        st.write("### Inventory Adjustment Template", template_df)
+                        st.info("💡 Fill in the 'Quantity' column with production numbers from production report")
+                        
+                        st.download_button(
+                            "📥 Download InventoryAdjustmentTemplate.csv",
+                            template_df.to_csv(index=False),
+                            "InventoryAdjustmentTemplate.csv",
+                            "text/csv",
+                            key="daily_download_template"
+                        )
+                    
+                finally:
+                    os.unlink(input_path)
+                    os.unlink(output_file.name)
+    
+    with tab2:
+        st.header("Uniware Adjustment Generator")
+        st.info("Upload the filled InventoryAdjustmentTemplate.csv to generate Uniware-compatible CSV")
+        
+        uploaded_file = st.file_uploader("Upload Filled InventoryAdjustmentTemplate.csv", type=["csv"], key="daily_uniware_adjustment")
+        
+        if uploaded_file:
+            st.write("### Preview of uploaded data:")
+            df = pd.read_csv(uploaded_file)
+            st.dataframe(df.head())
+            
+            if st.button("Generate Uniware Adjustment CSV", key="daily_uniware_generate"):
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_input:
+                    tmp_input.write(uploaded_file.getvalue())
+                    input_path = tmp_input.name
+                
+                output_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+                output_file.close()
+                
+                try:
+                    uniware_df, errors = generate_uniware_inventory_adjustment(input_path, output_file.name)
+                    
+                    if errors:
+                        st.error("Errors encountered:")
+                        for error in errors:
+                            st.write(f"❌ {error}")
+                    
+                    if uniware_df is not None:
+                        st.success("✅ Uniware adjustment CSV generated successfully!")
+                        st.write("### Uniware Inventory Adjustment", uniware_df)
+                        st.info("📤 Upload this file to Uniware: Tools → Imports → Inventory Adjustment → Update Existing")
+                        
+                        st.download_button(
+                            "📥 Download UniwareInventoryAdjustment.csv",
+                            uniware_df.to_csv(index=False),
+                            "UniwareInventoryAdjustment.csv",
+                            "text/csv",
+                            key="daily_download_uniware"
+                        )
+                    
+                finally:
+                    os.unlink(input_path)
+                    os.unlink(output_file.name)
+
+elif process == "Returns Inventory":
+    st.title("🔄 Returns Inventory Process")
+    
+    # SOP Instructions
+    with st.expander("📋 SOP Instructions - Click to expand", expanded=True):
+        st.markdown("""
+        ### Returns Inventory SOP (Operations Team)
+        **Role:** Update inventory for returns and adjustments
+        
+        #### Steps:
+        1. **Get Inventory List:** Export current inventory list from Uniware
+        2. **File Prep:** Use **Inventory List Template Generator** tab below to upload the inventory list CSV
+        3. **Fill Quantities:** Download the template and fill in the adjustment quantities (positive for additions, negative for removals)
+        4. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
+        5. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
+           - Select **Update Existing** and upload the generated Uniware CSV
+        
+        💡 **Use Cases:** Returns processing, damaged goods removal, stock corrections, etc.
+        """)
+    
+    # Tabs for returns inventory tools
+    tab1, tab2 = st.tabs(["📋 Inventory Template Generator", "📤 Uniware Adjustment Generator"])
+    
+    with tab1:
+        st.header("Inventory Template Generator")
+        st.info("Upload an inventory list CSV to generate inventory adjustment template")
+        
+        uploaded_file = st.file_uploader("Upload Inventory List CSV", type=["csv"], key="returns_inventory_template")
+        
+        if uploaded_file:
+            st.write("### Preview of uploaded data:")
+            df = pd.read_csv(uploaded_file)
+            st.dataframe(df.head())
+            
+            if st.button("Generate Template from Inventory List", key="returns_generate"):
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_input:
+                    tmp_input.write(uploaded_file.getvalue())
+                    input_path = tmp_input.name
+                
+                output_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+                output_file.close()
+                
+                try:
+                    template_df, errors = generate_inventory_template_from_list(input_path, output_file.name)
+                    
+                    if errors:
+                        st.error("Errors encountered:")
+                        for error in errors:
+                            st.write(f"❌ {error}")
+                    
+                    if template_df is not None:
+                        st.success("✅ Inventory template generated successfully!")
+                        st.write("### Inventory Adjustment Template", template_df)
+                        st.info("💡 Fill in the 'Quantity' column with adjustment quantities, then use the 'Uniware Adjustment Generator' tab")
+                        
+                        st.download_button(
+                            "📥 Download InventoryAdjustmentTemplate.csv",
+                            template_df.to_csv(index=False),
+                            "InventoryAdjustmentTemplate.csv",
+                            "text/csv",
+                            key="returns_download_template"
+                        )
+                    
+                finally:
+                    os.unlink(input_path)
+                    os.unlink(output_file.name)
+    
+    with tab2:
+        st.header("Uniware Adjustment Generator")
+        st.info("Upload the filled InventoryAdjustmentTemplate.csv to generate Uniware-compatible CSV")
+        
+        # Add selection options for Returns Inventory
+        col1, col2 = st.columns(2)
+        with col1:
+            inventory_type = st.selectbox(
+                "Inventory Type",
+                ["GOOD_INVENTORY", "VIRTUAL_INVENTORY"],
+                key="returns_inventory_type"
+            )
+        with col2:
+            adjustment_type = st.selectbox(
+                "Adjustment Type", 
+                ["ADD", "REMOVE", "REPLACE"],
+                key="returns_adjustment_type"
+            )
+        
+        uploaded_file = st.file_uploader("Upload Filled InventoryAdjustmentTemplate.csv", type=["csv"], key="returns_uniware_adjustment")
+        
+        if uploaded_file:
+            st.write("### Preview of uploaded data:")
+            df = pd.read_csv(uploaded_file)
+            st.dataframe(df.head())
+            
+            if st.button("Generate Uniware Adjustment CSV", key="returns_uniware_generate"):
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_input:
+                    tmp_input.write(uploaded_file.getvalue())
+                    input_path = tmp_input.name
+                
+                output_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+                output_file.close()
+                
+                try:
+                    uniware_df, errors = generate_uniware_inventory_adjustment(
+                        input_path, output_file.name, inventory_type, adjustment_type
+                    )
+                    
+                    if errors:
+                        st.error("Errors encountered:")
+                        for error in errors:
+                            st.write(f"❌ {error}")
+                    
+                    if uniware_df is not None:
+                        st.success("✅ Uniware adjustment CSV generated successfully!")
+                        st.write("### Uniware Inventory Adjustment", uniware_df)
+                        st.info(f"📤 Upload this file to Uniware: Tools → Imports → Inventory Adjustment → Update Existing")
+                        st.info(f"**Settings:** {inventory_type} | {adjustment_type}")
+                        
+                        st.download_button(
+                            "📥 Download UniwareInventoryAdjustment.csv",
+                            uniware_df.to_csv(index=False),
+                            "UniwareInventoryAdjustment.csv",
+                            "text/csv",
+                            key="returns_download_uniware"
+                        )
+                    
+                finally:
+                    os.unlink(input_path)
+                    os.unlink(output_file.name)
 
 elif process == "Product Addition":
     st.title("📦 Product Addition Process")
@@ -275,7 +591,7 @@ elif process == "Inventory Adjustment":
         """)
     
     # Tabs for inventory adjustment tools
-    tab1, tab2 = st.tabs(["📋 Inventory Template Generator", "📤 Uniware Adjustment Generator"])
+    tab1, tab2, tab3 = st.tabs(["📋 Inventory Template Generator", "📤 Uniware Adjustment Generator", "📊 Inventory List Template"])
     
     with tab1:
         st.header("Inventory Template Generator")
@@ -356,6 +672,49 @@ elif process == "Inventory Adjustment":
                             "📥 Download UniwareInventoryAdjustment.csv",
                             uniware_df.to_csv(index=False),
                             "UniwareInventoryAdjustment.csv",
+                            "text/csv"
+                        )
+                    
+                finally:
+                    os.unlink(input_path)
+                    os.unlink(output_file.name)
+    
+    with tab3:
+        st.header("Inventory List Template Generator")
+        st.info("Upload an inventory list CSV to generate inventory adjustment template")
+        
+        uploaded_file = st.file_uploader("Upload Inventory List CSV", type=["csv"], key="inventory_list_template")
+        
+        if uploaded_file:
+            st.write("### Preview of uploaded data:")
+            df = pd.read_csv(uploaded_file)
+            st.dataframe(df.head())
+            
+            if st.button("Generate Template from Inventory List"):
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_input:
+                    tmp_input.write(uploaded_file.getvalue())
+                    input_path = tmp_input.name
+                
+                output_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
+                output_file.close()
+                
+                try:
+                    template_df, errors = generate_inventory_template_from_list(input_path, output_file.name)
+                    
+                    if errors:
+                        st.error("Errors encountered:")
+                        for error in errors:
+                            st.write(f"❌ {error}")
+                    
+                    if template_df is not None:
+                        st.success("✅ Inventory template generated successfully!")
+                        st.write("### Inventory Adjustment Template", template_df)
+                        st.info("💡 Fill in the 'Quantity' column with adjustment quantities, then use the 'Uniware Adjustment Generator' tab")
+                        
+                        st.download_button(
+                            "📥 Download InventoryAdjustmentTemplate.csv",
+                            template_df.to_csv(index=False),
+                            "InventoryAdjustmentTemplate.csv",
                             "text/csv"
                         )
                     
