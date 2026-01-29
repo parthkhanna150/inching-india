@@ -11,9 +11,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src', 'common'))
 from item_master_generator import generate_items
 from uniware_shopify_linker import generate_channel_item_type
 from production_kickoff import generate_production_requirements
-from inventory_adjustment_template import generate_inventory_adjustment_template
+from production_template_generator import generate_inventory_adjustment_template
 from uniware_inventory_adjustment import generate_uniware_inventory_adjustment
-from inventory_list_template import generate_inventory_template_from_list
+from inventory_template_generator import generate_inventory_template_from_list
 
 st.set_page_config(page_title="Inching India Operations", layout="wide")
 
