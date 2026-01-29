@@ -77,13 +77,15 @@ elif process == "Production Team SOP":
     1. **Count:** Verify total finished pieces produced during the day
     2. **Report:** Prepare clear list (SKU + Final Count) for inventory adjustment
 
-    ## Twice Daily - Inventory Adjustment
-    1. **File Prep:** Use production report to create Inventory Adjustment CSV
-    2. **Data Entry:**
-       * **Increment:** Set `GOOD_INVENTORY` to the produced quantity (e.g., `10`)
-       * **Decrement:** Set `VIRTUAL_INVENTORY` to the negative of that quantity (e.g., `-10`)
-    3. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
-       * Select **Update Existing** and upload your file
+    ## Twice Daily - Daily Inventory Update
+    1. **File Prep:** Use production report to create Inventory Adjustment CSV using Daily Inventory Update process
+    2. **Generate Template:** Upload DailyProductionRequirements.csv to get template with SKU Code, Item Name, Quantity, Adjustment Type, Inventory Type columns
+    3. **Fill Template:** 
+       * **Quantity:** Enter produced quantities (positive numbers)
+       * **Adjustment Type:** Leave as ADD (default for production)
+       * **Inventory Type:** Leave as GOOD_INVENTORY (default for production)
+    4. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
+       * Select **Update Existing** and upload the generated Uniware CSV
        * *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
 
     ## TODOs
@@ -129,7 +131,21 @@ elif process == "Operations Team SOP":
     ### Step 4: Update Inventory
     - Items have been successfully uploaded and linked for inventory tracking
     - **Important:** The inventory is zero for these new items
-    - Follow the **Production Team's Inventory Adjustment SOP** to update quantities
+    - Follow the **Production Team's Daily Inventory Update process** to update quantities
+
+    ## Returns Inventory Process
+
+    ### When Needed: Returns, Damages, Stock Corrections
+    1. **Get Inventory List:** Export current inventory list from Uniware
+    2. **Generate Template:** Use Returns Inventory process to upload inventory list and get template
+    3. **Fill Template:**
+       * **Quantity:** Enter adjustment quantities (always positive numbers)
+       * **Adjustment Type:** Choose ADD, REMOVE, or REPLACE as needed
+       * **Inventory Type:** Choose GOOD_INVENTORY or VIRTUAL_INVENTORY as appropriate
+    4. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
+       * Select **Update Existing** and upload the generated Uniware CSV
+
+    **Use Cases:** Returns processing, damaged goods removal, stock corrections, etc.
 
     ## TODOs
     - Invoicing algorithm for price breakdown
@@ -261,7 +277,7 @@ elif process == "Daily Inventory Update":
                     if template_df is not None:
                         st.success("✅ Inventory template generated successfully!")
                         st.write("### Inventory Adjustment Template", template_df)
-                        st.info("💡 Fill in the 'Quantity' column with production numbers from production report")
+                        st.info("💡 Fill in the Quantity column with production numbers from production report")
                         
                         st.download_button(
                             "📥 Download InventoryAdjustmentTemplate.csv",
@@ -331,9 +347,11 @@ elif process == "Returns Inventory":
         #### Steps:
         1. **Get Inventory List:** Export current inventory list from Uniware
         2. **File Prep:** Use **Fill Quantities** tab below to upload the inventory list CSV
-        3. **Fill Quantities:** Download the template and fill in the adjustment quantities (always positive numbers)
-        4. **Select Options:** Choose appropriate Inventory Type and Adjustment Type (ADD/REMOVE/REPLACE)
-        5. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
+        3. **Fill Template:** Download the template and fill in:
+           - **Quantity**: Always positive numbers
+           - **Adjustment Type**: ADD, REMOVE, or REPLACE
+           - **Inventory Type**: GOOD_INVENTORY or VIRTUAL_INVENTORY
+        4. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
         5. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
            - Select **Update Existing** and upload the generated Uniware CSV
         
@@ -373,7 +391,7 @@ elif process == "Returns Inventory":
                     if template_df is not None:
                         st.success("✅ Inventory template generated successfully!")
                         st.write("### Inventory Adjustment Template", template_df)
-                        st.info("💡 Fill in the 'Quantity' column with adjustment quantities, then use the 'Uniware Adjustment Generator' tab")
+                        st.info("💡 Fill in the Quantity, Adjustment Type, and Inventory Type columns, then use the 'Uniware Adjustment Generator' tab")
                         
                         st.download_button(
                             "📥 Download InventoryAdjustmentTemplate.csv",
@@ -391,21 +409,6 @@ elif process == "Returns Inventory":
         st.header("Uniware Adjustment Generator")
         st.info("Upload the filled InventoryAdjustmentTemplate.csv to generate Uniware-compatible CSV")
         
-        # Add selection options for Returns Inventory
-        col1, col2 = st.columns(2)
-        with col1:
-            inventory_type = st.selectbox(
-                "Inventory Type",
-                ["GOOD_INVENTORY", "VIRTUAL_INVENTORY"],
-                key="returns_inventory_type"
-            )
-        with col2:
-            adjustment_type = st.selectbox(
-                "Adjustment Type", 
-                ["ADD", "REMOVE", "REPLACE"],
-                key="returns_adjustment_type"
-            )
-        
         uploaded_file = st.file_uploader("Upload Filled InventoryAdjustmentTemplate.csv", type=["csv"], key="returns_uniware_adjustment")
         
         if uploaded_file:
@@ -422,9 +425,7 @@ elif process == "Returns Inventory":
                 output_file.close()
                 
                 try:
-                    uniware_df, errors = generate_uniware_inventory_adjustment(
-                        input_path, output_file.name, inventory_type, adjustment_type
-                    )
+                    uniware_df, errors = generate_uniware_inventory_adjustment(input_path, output_file.name)
                     
                     if errors:
                         st.error("Errors encountered:")
@@ -434,8 +435,7 @@ elif process == "Returns Inventory":
                     if uniware_df is not None:
                         st.success("✅ Uniware adjustment CSV generated successfully!")
                         st.write("### Uniware Inventory Adjustment", uniware_df)
-                        st.info(f"📤 Upload this file to Uniware: Tools → Imports → Inventory Adjustment → Update Existing")
-                        st.info(f"**Settings:** {inventory_type} | {adjustment_type}")
+                        st.info("📤 Upload this file to Uniware: Tools → Imports → Inventory Adjustment → Update Existing")
                         
                         st.download_button(
                             "📥 Download UniwareInventoryAdjustment.csv",

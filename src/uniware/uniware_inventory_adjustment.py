@@ -1,7 +1,7 @@
 import csv
 import pandas as pd
 
-def generate_uniware_inventory_adjustment(input_file, output_file, inventory_type="GOOD_INVENTORY", adjustment_type="ADD"):
+def generate_uniware_inventory_adjustment(input_file, output_file, default_inventory_type="GOOD_INVENTORY", default_adjustment_type="ADD"):
     """
     Generate Uniware inventory adjustment CSV from filled template
     """
@@ -27,6 +27,10 @@ def generate_uniware_inventory_adjustment(input_file, output_file, inventory_typ
             try:
                 quantity = int(float(row['Quantity']))
                 if quantity > 0:  # Only process positive quantities
+                    # Use values from template if available, otherwise use defaults
+                    inventory_type = row.get('Inventory Type', default_inventory_type)
+                    adjustment_type = row.get('Adjustment Type', default_adjustment_type)
+                    
                     uniware_data.append({
                         'Product Code*': row['SKU Code'],
                         'Quantity*': quantity,

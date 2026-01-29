@@ -24,7 +24,9 @@ def generate_inventory_template_from_list(input_file, output_file):
             adjustment_data.append({
                 'SKU Code': row['Sku Code'],
                 'Item Name': row['Item Name'],
-                'Quantity': ''  # Empty column to be filled
+                'Quantity': '',  # Empty column to be filled
+                'Adjustment Type': 'ADD',  # Default value, can be changed
+                'Inventory Type': 'GOOD_INVENTORY'  # Default value, can be changed
             })
         
         # Sort by Item Name
