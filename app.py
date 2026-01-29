@@ -153,75 +153,72 @@ elif process == "Operations Team SOP":
     """)
 
 elif process == "Production Kickoff":
-    st.title("🚀 Production Kickoff Process")
+    st.title("✂️ Cut Packet Generator")
+    st.caption("Upload Unfulfillable CSV → select Base Product(s) → optional filters → download Excel with SUMIFS formulas")
     
-    # SOP Instructions
-    with st.expander("📋 SOP Instructions - Click to expand", expanded=True):
-        st.markdown("""
-        ### Production Kickoff SOP (Production Team)
-        **Role:** Orchestrating the whole process
-        
-        #### Steps:
-        1. **Extract Data:** Navigate to **Orders** → **Unfulfillable**
-        2. **Export:** Download the sheet of all items currently short in inventory
-        3. **Process:** Upload the file below to generate **DailyProductionRequirements.csv**
-        4. **Handoff:** Send this file to **Production Team** to start the tailoring queue
-        
-        **Output:** The processed file will contain:
-        - SKU Code, Item Name, Notes, Date Created, Order Number, Shipping Type
-        - Sorted by creation date
-        - Count summary of each simple item needed
-        """)
+    # Import the cut packet generator
+    sys.path.append(os.path.join(os.path.dirname(__file__), 'src', 'uniware'))
+    from cut_packet_generator import generate_cut_packet_data, create_excel_with_formulas, extract_base_product
     
-    st.header("📊 Generate Daily Production Requirements")
-    st.info("Upload the Unfulfillable items CSV to generate production requirements")
-    
-    uploaded_file = st.file_uploader("Upload Unfulfillable Items CSV", type=["csv"], key="production_kickoff")
+    uploaded_file = st.file_uploader("Upload Unfulfillable Items CSV", type=["csv"])
     
     if uploaded_file:
-        st.write("### Preview of uploaded data:")
-        df = pd.read_csv(uploaded_file)
-        st.dataframe(df.head())
-        
-        if st.button("Generate Production Requirements"):
-            with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_input:
-                tmp_input.write(uploaded_file.getvalue())
-                input_path = tmp_input.name
+        try:
+            df = pd.read_csv(uploaded_file)
             
-            output_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False)
-            output_file.close()
+            # Show preview
+            st.write("### Preview of uploaded data:")
+            st.dataframe(df.head())
             
-            try:
-                production_df, item_counts, errors = generate_production_requirements(input_path, output_file.name)
+            # Get base products for selection
+            if 'Item Name' in df.columns:
+                titles = df['Item Name'].dropna().astype(str).str.strip()
+                base_series = titles.map(extract_base_product)
+                counts = base_series.value_counts().to_dict()
                 
-                if errors:
-                    st.error("Errors encountered:")
-                    for error in errors:
-                        st.write(f"❌ {error}")
+                # Sort by count desc
+                bases_sorted = sorted(counts.keys(), key=lambda b: (-counts[b], b.lower()))
+                label_for_base = {b: f"{b} ({counts.get(b, 0)})" for b in bases_sorted}
+                base_for_label = {v: k for k, v in label_for_base.items()}
                 
-                if production_df is not None:
-                    st.success("✅ Production requirements generated successfully!")
-                    
-                    # Show the processed data
-                    st.write("### Daily Production Requirements", production_df)
-                    
-                    # Show item counts
-                    if item_counts:
-                        st.write("### Simple Item Counts")
-                        counts_df = pd.DataFrame(list(item_counts.items()), columns=['Item Name', 'Quantity Needed'])
-                        st.dataframe(counts_df)
-                    
-                    # Download button
-                    st.download_button(
-                        "📥 Download DailyProductionRequirements.csv",
-                        production_df.to_csv(index=False),
-                        "DailyProductionRequirements.csv",
-                        "text/csv"
-                    )
+                picked_labels = st.multiselect(
+                    "Select Base Product(s)",
+                    options=[label_for_base[b] for b in bases_sorted]
+                )
+                picked_bases = [base_for_label[lbl] for lbl in picked_labels]
                 
-            finally:
-                os.unlink(input_path)
-                os.unlink(output_file.name)
+                if st.button("Generate Cut Packet Excel", type="primary", disabled=len(picked_bases)==0):
+                    with st.spinner("Processing…"):
+                        try:
+                            # Generate cut packet data
+                            section_a, size_cols = generate_cut_packet_data(df, base_products=picked_bases)
+                            
+                            if section_a.empty:
+                                st.warning("No matching orders found with current filters.")
+                            else:
+                                st.success(f"✅ Generated {len(section_a)} cut packet entries")
+                                
+                                # Show preview
+                                st.write("### Cut Packet Data Preview")
+                                st.dataframe(section_a.head(20))
+                                
+                                # Create Excel with formulas
+                                product_label = ", ".join(picked_bases[:3]) + (" ..." if len(picked_bases) > 3 else "")
+                                excel_data = create_excel_with_formulas(section_a, size_cols, product_label)
+                                
+                                # Download button
+                                st.download_button(
+                                    label="⬇️ Download Cut Packet Excel",
+                                    data=excel_data,
+                                    file_name="cut_packet_OUTPUT.xlsx",
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                )
+                                
+                        except Exception as e:
+                            st.error(f"Error generating cut packet: {str(e)}")
+            
+        except Exception as e:
+            st.error(f"Failed to read CSV: {e}")
 
 elif process == "Daily Inventory Update":
     st.title("📊 Daily Inventory Update Process")
