@@ -218,7 +218,7 @@ elif process == "Daily Inventory Update":
         
         #### Steps:
         1. **Get Production Requirements:** Use the DailyProductionRequirements.csv file generated from the **Production Kickoff** process
-        2. **File Prep:** Use **Inventory Template Generator** tab below to upload DailyProductionRequirements.csv
+        2. **File Prep:** Use **Fill Quantities** tab below to upload DailyProductionRequirements.csv
         3. **Fill Quantities:** Download the template and fill in the produced quantities from production report
         4. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
         5. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
@@ -229,10 +229,10 @@ elif process == "Daily Inventory Update":
         """)
     
     # Tabs for daily inventory update tools
-    tab1, tab2 = st.tabs(["📋 Inventory Template Generator", "📤 Uniware Adjustment Generator"])
+    tab1, tab2 = st.tabs(["📋 Fill Quantities", "📤 Uniware Adjustment Generator"])
     
     with tab1:
-        st.header("Inventory Template Generator")
+        st.header("Fill Quantities")
         st.info("Upload DailyProductionRequirements.csv to generate inventory adjustment template")
         
         uploaded_file = st.file_uploader("Upload DailyProductionRequirements.csv", type=["csv"], key="daily_inventory_template")
@@ -330,9 +330,10 @@ elif process == "Returns Inventory":
         
         #### Steps:
         1. **Get Inventory List:** Export current inventory list from Uniware
-        2. **File Prep:** Use **Inventory List Template Generator** tab below to upload the inventory list CSV
-        3. **Fill Quantities:** Download the template and fill in the adjustment quantities (positive for additions, negative for removals)
-        4. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
+        2. **File Prep:** Use **Fill Quantities** tab below to upload the inventory list CSV
+        3. **Fill Quantities:** Download the template and fill in the adjustment quantities (always positive numbers)
+        4. **Select Options:** Choose appropriate Inventory Type and Adjustment Type (ADD/REMOVE/REPLACE)
+        5. **Generate Final CSV:** Use **Uniware Adjustment Generator** tab below to upload the filled template
         5. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
            - Select **Update Existing** and upload the generated Uniware CSV
         
@@ -340,10 +341,10 @@ elif process == "Returns Inventory":
         """)
     
     # Tabs for returns inventory tools
-    tab1, tab2 = st.tabs(["📋 Inventory Template Generator", "📤 Uniware Adjustment Generator"])
+    tab1, tab2 = st.tabs(["📋 Fill Quantities", "📤 Uniware Adjustment Generator"])
     
     with tab1:
-        st.header("Inventory Template Generator")
+        st.header("Fill Quantities")
         st.info("Upload an inventory list CSV to generate inventory adjustment template")
         
         uploaded_file = st.file_uploader("Upload Inventory List CSV", type=["csv"], key="returns_inventory_template")
