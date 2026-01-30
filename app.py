@@ -65,9 +65,11 @@ elif process == "Production Team SOP":
     ## Morning - Production Kickoff
     1. **Extract Data:** Navigate to **Orders** → **Unfulfillable**
     2. **Export:** Download the sheet of all items currently short in inventory
+    """)
     
-    ![Unfulfilled Inventory Download](static/images/unfulfilled_inventory_list_download.png)
+    st.image("static/images/unfulfilled_inventory_list_download.png", caption="Unfulfilled Inventory Download")
     
+    st.markdown("""
     3. **Process:** Use the Production Kickoff tool to generate DailyProductionRequirements.csv
     4. **Task Allocation:** Break down quantities by SKU and distribute to the **Tailors**
 
@@ -89,10 +91,12 @@ elif process == "Production Team SOP":
        * **Inventory Type:** Leave as GOOD_INVENTORY (default for production)
     4. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
        * Select **Update Existing** and upload the generated Uniware CSV
-       
-    ![Inventory Adjustment Upload](static/images/inventory_adjustment_upload_to_uniware.png)
-    
        * *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
+    """)
+    
+    st.image("static/images/inventory_adjustment_upload_to_uniware.png", caption="Inventory Adjustment Upload")
+    
+    st.markdown("""
 
     ## TODOs
     - Notes and Shopify Order number needed in unfulfillable sheet
@@ -124,9 +128,11 @@ elif process == "Operations Team SOP":
     - Go to "Unlinked" tab in Uniware
     - Filter on "Shopify" Channel
     - Download this file and rename to **ShopifyNewProducts.csv**
+    """)
     
-    ![Product Addition Download](static/images/product_addition_download_from_uniware.png)
+    st.image("static/images/product_addition_download_from_uniware.png", caption="Product Addition Download")
     
+    st.markdown("""
     - Go to Product Addition from the dropdown and use item-master-generator software to upload this file
     - Click "Generate Uniware Items" and download the result (**UniwareNewItems.csv**)
     - Go to Imports → Choose "Item Master" → "Create New and Update Existing" → Upload UniwareNewItems.csv
