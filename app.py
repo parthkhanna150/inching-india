@@ -22,25 +22,31 @@ st.sidebar.title("🛍️ Inching India Operations")
 
 process = st.sidebar.selectbox(
     "Select Process",
-    ["Production Kickoff", "Daily Inventory Update", "Product Addition", "Returns Inventory"]
+    ["Production Kickoff", "Product Addition"]
+    # ["Production Kickoff", "Daily Inventory Update", "Product Addition", "Returns Inventory"]
 )
 
 st.sidebar.markdown("### 📖 Documentation")
-col1, col2, col3 = st.sidebar.columns(3)
-with col1:
-    main_sop = st.button("Main SOP")
-with col2:
-    prod_sop = st.button("Prod SOP")
-with col3:
-    ops_sop = st.button("Ops SOP")
+# col1, col2, col3, col4 = st.sidebar.columns(4)
+# with col1:
+#     main_sop = st.button("Main SOP")
+# with col2:
+#     prod_sop = st.button("Prod SOP")
+# with col3:
+#     ops_sop = st.button("Ops SOP")
+# with col4:
+inventory_sop = st.button("Inventory SOP")
 
 # Determine which process to show - buttons override process selection
-if main_sop:
-    process = "README"
-elif prod_sop:
-    process = "Production Team SOP"
-elif ops_sop:
-    process = "Operations Team SOP"
+# if main_sop:
+#     process = "README"
+# elif prod_sop:
+#     process = "Production Team SOP"
+# elif ops_sop:
+#     process = "Operations Team SOP"
+# elif inventory_sop:
+if inventory_sop:
+    process = "Adding Inventory SOP"
 
 if process == "README":
     st.title("📖 Standard Operating Procedures")
@@ -63,7 +69,7 @@ elif process == "Production Team SOP":
     
     st.markdown("""
     ## Morning - Production Kickoff
-    1. **Extract Data:** Navigate to **Orders** → **Unfulfillable**
+    1. **Extract Data:** Navigate to **Order Items** → **Unfulfillable**
     2. **Export:** Download the sheet of all items currently short in inventory
     """)
     
@@ -82,24 +88,46 @@ elif process == "Production Team SOP":
     1. **Count:** Verify total finished pieces produced during the day
     2. **Report:** Prepare clear list (SKU + Final Count) for inventory adjustment
 
-    ## Twice Daily - Daily Inventory Update
-    1. **File Prep:** Use production report to create Inventory Adjustment CSV using Daily Inventory Update process
-    2. **Generate Template:** Upload DailyProductionRequirements.csv to get template with SKU Code, Item Name, Quantity, Adjustment Type, Inventory Type columns
-    3. **Fill Template:** 
-       * **Quantity:** Enter produced quantities (positive numbers)
-       * **Adjustment Type:** Leave as ADD (default for production)
-       * **Inventory Type:** Leave as GOOD_INVENTORY (default for production)
-    4. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
-       * Select **Update Existing** and upload the generated Uniware CSV
-       * *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
+    ## Adding Inventory
+    **Note:** This inventory update will happen at the time of Processing Returns as well as daily production.
+    
+    1. **Go to Inventory page** in Uniware (as seen in image)
+    2. **Click "Add Inventory"** and in the pop-up, search for the item name, then put quantity to be added as "Good Inventory" type
     """)
     
-    st.image("static/images/inventory_adjustment_upload_to_uniware.png", caption="Inventory Adjustment Upload")
+    st.image("static/images/inventory_adjustment_upload_to_uniware.png", caption="Inventory Page in Uniware")
+    st.image("static/images/add_inventory_popup.png", caption="Add Inventory Pop-up")
     
     st.markdown("""
 
     ## TODOs
     - Notes and Shopify Order number needed in unfulfillable sheet
+    """)
+
+elif process == "Adding Inventory SOP":
+    st.title("📦 Adding Inventory SOP")
+    
+    st.markdown("""
+    ## Adding Inventory Process
+    **Note:** This inventory update will happen at the time of Processing Returns as well as daily production.
+    
+    ### Steps:
+    1. **Go to Inventory page** in Uniware (as seen in image)
+    2. **Click "Add Inventory"** and in the pop-up, search for the item name, then put quantity to be added as "Good Inventory" type
+    """)
+    
+    st.image("static/images/inventory_adjustment_upload_to_uniware.png", caption="Inventory Page in Uniware")
+    st.image("static/images/add_inventory_popup.png", caption="Add Inventory Pop-up")
+    
+    st.markdown("""
+    ### When to Use:
+    - **Daily Production:** After completing production, add finished items to inventory
+    - **Processing Returns:** When returned items are received and inspected as good condition
+    
+    ### Important Notes:
+    - Always select "Good Inventory" type for items in sellable condition
+    - Search by exact item name to ensure correct product selection
+    - Double-check quantities before confirming the addition
     """)
 
 elif process == "Operations Team SOP":
@@ -170,6 +198,39 @@ elif process == "Operations Team SOP":
 elif process == "Production Kickoff":
     st.title("✂️ Cut Packet Generator")
     st.caption("Upload Unfulfillable CSV → select Base Product(s) → optional filters → download Excel with SUMIFS formulas")
+    
+    # SOP Instructions
+    with st.expander("📋 SOP Instructions - Click to expand", expanded=True):
+        st.markdown("""
+        ### Production Kickoff SOP (Production Team)
+        **Role:** Orchestrating the whole process
+        
+        #### Steps:
+        1. **Extract Data:** Navigate to **Order Items** → **Unfulfillable**
+        """)
+        
+        st.image("static/images/unfulfilled_inventory_list_download.png", caption="Unfulfilled Inventory Download")
+        
+        st.markdown("""
+        2. **Ensure Created filter is cleared**
+        """)
+        
+        st.image("static/images/clear_created_filter.png", caption="Clear Created Filter")
+        
+        st.markdown("""
+        3. **Export:** Download this sheet
+        """)
+        
+        st.markdown("""
+        4. **Process:** Upload the file below to generate **Cut Packet Requirements** (enhanced with cut-packet-generator logic)
+        5. **Handoff:** Send this file to **Production Team** to start the tailoring queue
+        
+        **Enhanced Output:** The processed file will contain:
+        - Order-wise breakdown with base products
+        - Size requirements (Top/Bottom sizes)
+        - Component breakdown for production planning
+        - Production summary by product and size
+        """)
     
     # Import the cut packet generator
     sys.path.append(os.path.join(os.path.dirname(__file__), 'src', 'uniware'))
@@ -252,7 +313,11 @@ elif process == "Daily Inventory Update":
         5. **Upload:** Navigate to **Tools** → **Imports** → **Inventory Adjustment**
            - Select **Update Existing** and upload the generated Uniware CSV
            - *Note: Once uploaded, fulfillable orders will automatically move to Operations Team's Shipping Panel*
+        """)
         
+        st.image("static/images/inventory_adjustment_upload_to_uniware.png", caption="Inventory Adjustment Upload")
+        
+        st.markdown("""
         💡 **Note:** If you don't have DailyProductionRequirements.csv, ask Production Team to run the **Production Kickoff** process first.
         """)
     
@@ -470,28 +535,32 @@ elif process == "Product Addition":
         ### Product Addition SOP (Operations Team)
         **Role:** Add new products in the system before following inventory adjustment
         
-        #### Steps:
-        1. **Create Shopify Products** as normal (by duplicating from Shopify). 
-           *These products will get synced to Uniware (syncing happens every 15 minutes) as UNLINKED products.*
+        ### Step 1: Create Shopify Products
+        - Create Shopify Products as normal (by duplicating from Shopify)
+        - *These products will get synced to Uniware (syncing happens every 15 minutes) as UNLINKED products*
+
+        ### Step 2: Add Products to Item Master
+        - Go to "Unlinked" tab in Uniware
+        - Filter on "Shopify" Channel
+        - Download this file and rename to **ShopifyNewProducts.csv**
+        """)
         
-        2. **Add unlinked products to item master:**
-           - Go to "Unlinked" tab in Uniware
-           - Filter on "Shopify" Channel
-           - Download this file and rename to **ShopifyNewProducts.csv**
-           - Use **Item Master Generator** tab below to upload this file
-           - Click "Generate Uniware Items" and download **UniwareNewItems.csv**
+        st.image("static/images/product_addition_download_from_uniware.png", caption="Product Addition Download")
         
-        3. **Import to Uniware:**
-           - Go to Imports → Choose "Item Master" → "Create New and Update Existing" → Upload UniwareNewItems.csv
-        
-        4. **Link Uniware Items to Shopify products:**
-           - After Import finishes, use **Uniware Shopify Linker** tab below to upload the **original ShopifyNewProducts.csv**
-           - Click "Link New Products" and download **NewLinks.csv**
-        
-        5. **Import Channel Links:**
-           - Go to Imports → Choose "Channel Item Sync" → "Create New and Update Existing" → Upload NewLinks.csv
-        
-        ⚠️ **Important:** After completion, follow the Inventory Adjustment SOP to update quantities.
+        st.markdown("""
+        - Use **Item Master Generator** tab below to upload this file
+        - Click "Generate Uniware Items" and download the result (**UniwareNewItems.csv**)
+        - Go to Imports → Choose "Item Master" → "Create New and Update Existing" → Upload UniwareNewItems.csv
+
+        ### Step 3: Link Items to Shopify Products
+        - After the Import finishes, use **Uniware Shopify Linker** tab below to upload the **original ShopifyNewProducts.csv** file
+        - Click "Link New Products" and download the result (**NewLinks.csv**)
+        - Go to Imports → Choose "Channel Item Sync" → "Create New and Update Existing" → Upload NewLinks.csv
+
+        ### Step 4: Update Inventory
+        - Items have been successfully uploaded and linked for inventory tracking
+        - **Important:** The inventory is zero for these new items
+        - Follow the **Adding Inventory SOP** to update quantities
         """)
     
     # Tabs for the tools
