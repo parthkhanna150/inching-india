@@ -22,31 +22,9 @@ st.sidebar.title("🛍️ Inching India Operations")
 
 process = st.sidebar.selectbox(
     "Select Process",
-    ["Production Kickoff", "Product Addition"]
+    ["Production Kickoff", "Product Addition", "Add Inventory"]
     # ["Production Kickoff", "Daily Inventory Update", "Product Addition", "Returns Inventory"]
 )
-
-st.sidebar.markdown("### 📖 Documentation")
-# col1, col2, col3, col4 = st.sidebar.columns(4)
-# with col1:
-#     main_sop = st.button("Main SOP")
-# with col2:
-#     prod_sop = st.button("Prod SOP")
-# with col3:
-#     ops_sop = st.button("Ops SOP")
-# with col4:
-inventory_sop = st.button("Inventory SOP")
-
-# Determine which process to show - buttons override process selection
-# if main_sop:
-#     process = "README"
-# elif prod_sop:
-#     process = "Production Team SOP"
-# elif ops_sop:
-#     process = "Operations Team SOP"
-# elif inventory_sop:
-if inventory_sop:
-    process = "Adding Inventory SOP"
 
 if process == "README":
     st.title("📖 Standard Operating Procedures")
@@ -104,7 +82,7 @@ elif process == "Production Team SOP":
     - Notes and Shopify Order number needed in unfulfillable sheet
     """)
 
-elif process == "Adding Inventory SOP":
+elif process == "Add Inventory":
     st.title("📦 Adding Inventory SOP")
     
     st.markdown("""
