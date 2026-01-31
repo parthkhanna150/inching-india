@@ -24,7 +24,7 @@ st.sidebar.title("🛍️ Inching India Operations")
 
 process = st.sidebar.selectbox(
     "Select Process",
-    ["Production Kickoff", "Product Addition", "Add Inventory", "Production Adjustment", "Returns Adjustment"]
+    ["Production Kickoff", "Product Addition", "Manual Inventory Adjustment", "Production Inventory Adjustment", "Returns Inventory Adjustment"]
 )
 
 if process == "README":
@@ -83,7 +83,7 @@ elif process == "Production Team SOP":
     - Notes and Shopify Order number needed in unfulfillable sheet
     """)
 
-elif process == "Add Inventory":
+elif process == "Manual Inventory Adjustment":
     st.title("📦 Adding Inventory SOP")
     
     st.markdown("""
@@ -783,10 +783,10 @@ elif process == "Inventory Adjustment":
                     os.unlink(input_path)
                     os.unlink(output_file.name)
 
-elif process == "Production Adjustment":
+elif process == "Production Inventory Adjustment":
     generate_production_inventory_adjustment()
 
-elif process == "Returns Adjustment":
+elif process == "Returns Inventory Adjustment":
     generate_returns_inventory_adjustment()
 
 # Footer
