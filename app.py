@@ -14,6 +14,8 @@ from production_kickoff import generate_production_requirements
 from production_template_generator import generate_inventory_adjustment_template
 from uniware_inventory_adjustment import generate_uniware_inventory_adjustment
 from inventory_template_generator import generate_inventory_template_from_list
+from production_inventory_adjustment import generate_production_inventory_adjustment
+from returns_inventory_adjustment import generate_returns_inventory_adjustment
 
 st.set_page_config(page_title="Inching India Operations", layout="wide")
 
@@ -22,8 +24,7 @@ st.sidebar.title("🛍️ Inching India Operations")
 
 process = st.sidebar.selectbox(
     "Select Process",
-    ["Production Kickoff", "Product Addition", "Add Inventory"]
-    # ["Production Kickoff", "Daily Inventory Update", "Product Addition", "Returns Inventory"]
+    ["Production Kickoff", "Product Addition", "Add Inventory", "Production Adjustment", "Returns Adjustment"]
 )
 
 if process == "README":
@@ -781,6 +782,12 @@ elif process == "Inventory Adjustment":
                 finally:
                     os.unlink(input_path)
                     os.unlink(output_file.name)
+
+elif process == "Production Adjustment":
+    generate_production_inventory_adjustment()
+
+elif process == "Returns Adjustment":
+    generate_returns_inventory_adjustment()
 
 # Footer
 st.sidebar.markdown("---")
