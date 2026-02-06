@@ -45,7 +45,7 @@ def process_production_to_adjustment(production_df: pd.DataFrame, mapping_df: pd
             if sku_code:
                 adjustments.append({
                     'SKU Code': sku_code,
-                    'Item Name': f"{item_name} - {part_type.title()} {size}",
+                    'Shelf Code': 'DEFAULT',
                     'Quantity': qty,
                     'Adjustment Type': 'ADD',
                     'Inventory Type': 'GOOD_INVENTORY'
