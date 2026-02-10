@@ -530,12 +530,20 @@ elif process == "Product Addition":
         - Use **Item Master Generator** tab below to upload this file
         - Click "Generate Uniware Items" and download the result (**UniwareNewItems.csv**)
         - Go to Imports → Choose "Item Master" → "Create New and Update Existing" → Upload UniwareNewItems.csv
+        """)
 
+        st.image("static/images/uniware_item_master_import.png", caption="Uniware Item Master Import Configuration")
+
+        st.markdown("""
         ### Step 3: Link Items to Shopify Products
         - After the Import finishes, use **Uniware Shopify Linker** tab below to upload the **original ShopifyNewProducts.csv** file
         - Click "Link New Products" and download the result (**NewLinks.csv**)
-        - Go to Imports → Choose "Channel Item Sync" → "Create New and Update Existing" → Upload NewLinks.csv
+        - Go to Imports → Choose "Channel Item Type" → "Create New and Update Existing" → Upload NewLinks.csv
+        """)
 
+        st.image("static/images/uniware_channel_item_type_import.png", caption="Uniware Channel Item Type Import Configuration")
+
+        st.markdown("""
         ### Step 4: Update Inventory
         - Items have been successfully uploaded and linked for inventory tracking
         - **Important:** The inventory is zero for these new items
