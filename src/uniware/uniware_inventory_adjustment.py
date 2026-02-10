@@ -32,16 +32,16 @@ def generate_uniware_inventory_adjustment(input_file, output_file, default_inven
                     adjustment_type = row.get('Adjustment Type', default_adjustment_type)
                     
                     uniware_data.append({
-                        'Product Code*': row['SKU Code'],
-                        'Quantity*': quantity,
-                        'Shelf Code*': 'DEFAULT',
-                        'Adjustment Type*': adjustment_type,
-                        'Inventory Type': inventory_type,
-                        'Transfer to Shelf Code': '',
-                        'Sla': '',
-                        'Source Batch Code': '',
-                        'Remarks': '',
-                        'Force Allocate': ''
+                    'Product Code*': row['SKU Code'],
+                    'Quantity*': quantity,
+                    'Shelf Code*': 'DEFAULT',
+                    'Adjustment Type*': adjustment_type,
+                    'Inventory Type': inventory_type,
+                    'Transfer to Shelf Code': '',
+                    'Sla': '',
+                    'Source Batch Code': '',
+                    'Remarks': '',
+                    'Force Allocate': ''
                     })
             except (ValueError, TypeError):
                 continue  # Skip invalid quantities
