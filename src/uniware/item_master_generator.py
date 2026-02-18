@@ -162,7 +162,7 @@ def generate_items(input_file, simple_output, bundle_output, combined_output=Non
                         'Type': 'BUNDLE',
                         'Scan Type': 'SIMPLE',
                         'Component Product Code': component_product_code,
-                        'Component Quantity': 1,
+                        'Component Quantity': '1',
                         'Component Price': '1000.0',
                         'Batch Group Code': '',
                         'Dispatch Expiry Tolerance': '',
