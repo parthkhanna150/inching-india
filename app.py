@@ -16,6 +16,7 @@ from uniware_inventory_adjustment import generate_uniware_inventory_adjustment
 from inventory_template_generator import generate_inventory_template_from_list
 from production_inventory_adjustment import generate_production_inventory_adjustment
 from returns_inventory_adjustment import generate_returns_inventory_adjustment
+from international_item_master_generator import generate_international_bundles
 
 st.set_page_config(page_title="Inching India Operations", layout="wide")
 
@@ -549,9 +550,46 @@ elif process == "Product Addition":
         - **Important:** The inventory is zero for these new items
         - Follow the **Adding Inventory SOP** to update quantities
         """)
+
+        st.divider()
+
+        st.markdown("""
+        ---
+        ## International Product Addition SOP
+        *For adding products to the international website (SHOPIFY_INT / POS channels)*
+
+        The SIMPLE items for international products already exist in the domestic item master.
+        You only need to create new BUNDLE items and link them to the international channel.
+
+        ### Step 1: Create International Shopify Products
+        - Create products on the international Shopify store (by duplicating from Shopify)
+        - These products will sync to Uniware as UNLINKED products under the international channel
+
+        ### Step 2: Download Required Files
+        - **Item Master:** Go to Uniware → Item Master → Export All → Download as CSV
+        - **Unlinked Listings:** Go to Uniware → Channel Item Type → Filter on international channel (SHOPIFY_INT) → Filter status "UNLINKED" → Download as CSV
+
+        ### Step 3: Generate International Bundles & Links
+        - Use the **International Item Master Generator** tab below
+        - Upload both files: the full Item Master CSV and the Unlinked International Listings CSV
+        - Click "Generate International Bundles"
+        - This will generate:
+          - **international_bundle_item_master.csv** — New BUNDLE items mapped to existing SIMPLE items
+          - **international_channel_item_type.csv** — Channel links for the international channel
+          - **missing_components.csv** — Any products whose SIMPLE items don't exist yet (these need to be added via the domestic flow first)
+
+        ### Step 4: Upload to Uniware
+        - Go to Imports → Choose "Item Master" → "Create New and Update Existing" → Upload **international_bundle_item_master.csv**
+        - After the Item Master import finishes, go to Imports → Choose "Channel Item Type" → "Create New and Update Existing" → Upload **international_channel_item_type.csv**
+
+        ### Step 5: Handle Missing Components
+        - Review **missing_components.csv** for any products that couldn't be linked
+        - These products need their SIMPLE items created first using the **domestic** Product Addition flow (Steps 1–3 above)
+        - After creating the missing SIMPLE items, re-run the International Item Master Generator
+        """)
     
     # Tabs for the tools
-    tab1, tab2 = st.tabs(["🔧 Item Master Generator", "🔗 Uniware Shopify Linker"])
+    tab1, tab2, tab3 = st.tabs(["🔧 Item Master Generator", "🔗 Uniware Shopify Linker", "🌐 International Item Master Generator"])
     
     with tab1:
         st.header("Item Master Generator")
@@ -637,6 +675,81 @@ elif process == "Product Addition":
                 finally:
                     os.unlink(input_path)
                     os.unlink(output_file.name)
+
+    with tab3:
+        st.header("International Item Master Generator")
+        st.info("Upload your full Item Master and the unlinked international listings to generate bundle items and channel links.")
+
+        col_upload1, col_upload2 = st.columns(2)
+        with col_upload1:
+            uploaded_item_master = st.file_uploader("Upload Item Master CSV (full export from Uniware)", type=["csv"], key="intl_item_master")
+        with col_upload2:
+            uploaded_intl_listings = st.file_uploader("Upload Unlinked International Listings CSV", type=["csv"], key="intl_listings")
+
+        if uploaded_item_master and uploaded_intl_listings:
+            st.write("### Preview of International Listings:")
+            intl_df = pd.read_csv(uploaded_intl_listings)
+            st.dataframe(intl_df.head())
+
+            if st.button("Generate International Bundles"):
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_im:
+                    tmp_im.write(uploaded_item_master.getvalue())
+                    item_master_path = tmp_im.name
+
+                with tempfile.NamedTemporaryFile(mode='w+b', suffix='.csv', delete=False) as tmp_intl:
+                    tmp_intl.write(uploaded_intl_listings.getvalue())
+                    intl_listings_path = tmp_intl.name
+
+                output_dir = tempfile.mkdtemp()
+
+                try:
+                    generate_international_bundles(item_master_path, intl_listings_path, output_dir)
+
+                    bundle_path = os.path.join(output_dir, "international_bundle_item_master.csv")
+                    channel_path = os.path.join(output_dir, "international_channel_item_type.csv")
+                    missing_path = os.path.join(output_dir, "missing_components.csv")
+
+                    if os.path.exists(bundle_path):
+                        bundle_df = pd.read_csv(bundle_path)
+                        st.success(f"✅ Generated {len(bundle_df)} bundle item rows")
+                        st.write("### Bundle Item Master", bundle_df)
+                        st.download_button(
+                            "📥 Download international_bundle_item_master.csv",
+                            bundle_df.to_csv(index=False),
+                            "international_bundle_item_master.csv",
+                            "text/csv",
+                            key="dl_intl_bundles"
+                        )
+                    else:
+                        st.warning("No bundle items were generated. Check if SIMPLE items exist in the item master.")
+
+                    if os.path.exists(channel_path):
+                        channel_df = pd.read_csv(channel_path)
+                        st.success(f"✅ Generated {len(channel_df)} channel item links")
+                        st.write("### Channel Item Type Links", channel_df)
+                        st.download_button(
+                            "📥 Download international_channel_item_type.csv",
+                            channel_df.to_csv(index=False),
+                            "international_channel_item_type.csv",
+                            "text/csv",
+                            key="dl_intl_channel"
+                        )
+
+                    if os.path.exists(missing_path):
+                        missing_df = pd.read_csv(missing_path)
+                        st.warning(f"⚠️ {len(missing_df)} missing components found — these need SIMPLE items created via the domestic flow first.")
+                        st.write("### Missing Components", missing_df)
+                        st.download_button(
+                            "📥 Download missing_components.csv",
+                            missing_df.to_csv(index=False),
+                            "missing_components.csv",
+                            "text/csv",
+                            key="dl_missing"
+                        )
+
+                finally:
+                    os.unlink(item_master_path)
+                    os.unlink(intl_listings_path)
 
 elif process == "Inventory Adjustment":
     st.title("📊 Inventory Adjustment Process")
