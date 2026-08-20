@@ -25,7 +25,7 @@ st.sidebar.title("🛍️ Inching India Operations")
 
 process = st.sidebar.selectbox(
     "Select Process",
-    ["Production Kickoff", "Product Addition", "Manual Inventory Adjustment", "Production Inventory Adjustment", "Returns Inventory Adjustment"]
+    ["Production Kickoff", "Product Addition", "Manual Inventory Adjustment", "Production Inventory Adjustment", "Returns Inventory Adjustment", "Exhibition Customer Intake"]
 )
 
 if process == "README":
@@ -909,6 +909,68 @@ elif process == "Production Inventory Adjustment":
 
 elif process == "Returns Inventory Adjustment":
     generate_returns_inventory_adjustment()
+
+elif process == "Exhibition Customer Intake":
+    st.title("🎪 Exhibition Customer Intake")
+    st.caption("Capture customer details at the booth and send a WhatsApp follow-up")
+
+    BUSINESS_WHATSAPP = "919041555664"
+
+    with st.form("customer_intake_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input("Customer Name *")
+            phone = st.text_input("Phone Number *", placeholder="e.g. 9876543210")
+            city = st.text_input("City")
+        with col2:
+            interest = st.multiselect(
+                "Interested In",
+                ["Kurtas", "Co-ords", "Suits", "Dupattas", "Accessories", "Other"]
+            )
+            budget = st.selectbox(
+                "Budget Range",
+                ["", "Under ₹1,000", "₹1,000 – ₹3,000", "₹3,000 – ₹5,000", "Above ₹5,000"]
+            )
+            follow_up = st.selectbox(
+                "Follow-up Preference",
+                ["WhatsApp", "Call", "No follow-up needed"]
+            )
+        notes = st.text_area("Notes / Items they liked", height=80)
+        submitted = st.form_submit_button("Save & Generate WhatsApp Link", type="primary")
+
+    if submitted:
+        if not name or not phone:
+            st.error("Name and phone number are required.")
+        else:
+            phone_clean = phone.strip().replace(" ", "").replace("-", "").lstrip("0")
+            if not phone_clean.startswith("91"):
+                phone_clean = "91" + phone_clean
+
+            interest_str = ", ".join(interest) if interest else "general browsing"
+            budget_str = f" | Budget: {budget}" if budget else ""
+            notes_str = f"\n\nNotes: {notes}" if notes else ""
+
+            message = (
+                f"Hi {name}! 👋 Thank you for visiting Inching India at the exhibition.\n\n"
+                f"You were interested in: {interest_str}{budget_str}.\n\n"
+                f"We'd love to share our latest collection with you. "
+                f"Feel free to reach out anytime! 🌸{notes_str}"
+            )
+
+            import urllib.parse
+            wa_url = f"https://wa.me/{phone_clean}?text={urllib.parse.quote(message)}"
+
+            st.success(f"✅ Captured: {name} ({phone})")
+
+            if follow_up == "WhatsApp":
+                st.markdown(f"### [📲 Open WhatsApp for {name}]({wa_url})")
+                st.caption("Click the link above to open WhatsApp with the pre-filled message.")
+
+            with st.expander("Preview WhatsApp message"):
+                st.text(message)
+
+            st.markdown("---")
+            st.markdown(f"**Business WhatsApp:** [wa.me/{BUSINESS_WHATSAPP}](https://wa.me/{BUSINESS_WHATSAPP})")
 
 # Footer
 st.sidebar.markdown("---")
